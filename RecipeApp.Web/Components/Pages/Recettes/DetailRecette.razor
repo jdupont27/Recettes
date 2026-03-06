@@ -1,0 +1,188 @@
+@page "/recettes/{Id:guid}"
+@using MediatR
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IMediator Mediateur
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>@(_recette?.Titre ?? "Recette")</PageTitle>
+
+@if (_chargement)
+{
+    <div class="text-center py-5"><div class="spinner-border text-success"></div></div>
+}
+else if (_recette == null)
+{
+    <div class="alert alert-warning">Recette introuvable ou accès non autorisé.</div>
+}
+else
+{
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h1>@_recette.Titre</h1>
+                    <p class="text-muted">
+                        Par <strong>@(_recette.NomAuteur ?? "Anonyme")</strong> &bull;
+                        @_recette.DateCreation.ToString("dd MMMM yyyy")
+                    </p>
+                </div>
+                @if (_estAuteur)
+                {
+                    <div class="btn-group">
+                        <a href="/recettes/@_recette.Id/modifier" class="btn btn-outline-secondary">Modifier</a>
+                        <button class="btn btn-outline-danger" @onclick="SupprimerRecette">Supprimer</button>
+                    </div>
+                }
+            </div>
+
+            <!-- Image -->
+            @if (!string.IsNullOrEmpty(_recette.CheminImage))
+            {
+                <img src="@_recette.CheminImage" class="img-fluid rounded mb-4" alt="@_recette.Titre" style="max-height:400px;width:100%;object-fit:cover;" />
+            }
+
+            <!-- Description -->
+            @if (!string.IsNullOrEmpty(_recette.Description))
+            {
+                <p class="lead mb-4">@_recette.Description</p>
+            }
+
+            <!-- Informations -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3 text-center">
+                    <div class="bg-light rounded p-3">
+                        <div class="fw-bold fs-4">@_recette.TempsPreparation</div>
+                        <small class="text-muted">min. préparation</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="bg-light rounded p-3">
+                        <div class="fw-bold fs-4">@_recette.TempsCuisson</div>
+                        <small class="text-muted">min. cuisson</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="bg-light rounded p-3">
+                        <div class="fw-bold fs-4">@_recette.NombrePortions</div>
+                        <small class="text-muted">portion(s)</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <div class="bg-light rounded p-3">
+                        <div class="fw-bold fs-4">@_recette.Difficulte</div>
+                        <small class="text-muted">difficulté</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étiquettes -->
+            @if (_recette.Etiquettes.Any())
+            {
+                <div class="mb-4">
+                    @foreach (var etiquette in _recette.Etiquettes)
+                    {
+                        <span class="badge bg-secondary me-1">@etiquette.Nom</span>
+                    }
+                </div>
+            }
+
+            <!-- Ingrédients -->
+            <h3 class="mt-4">Ingrédients</h3>
+            <ul class="list-group mb-4">
+                @foreach (var ingredient in _recette.Ingredients)
+                {
+                    <li class="list-group-item">
+                        <strong>@FormatQuantite(ingredient.Quantite, ingredient.Unite)</strong> @ingredient.Nom
+                    </li>
+                }
+            </ul>
+
+            <!-- Étapes -->
+            <h3>Préparation</h3>
+            <ol class="list-group list-group-numbered mb-4">
+                @foreach (var etape in _recette.Etapes)
+                {
+                    <li class="list-group-item d-flex">
+                        <div>@etape.Description</div>
+                    </li>
+                }
+            </ol>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Catégories -->
+            @if (_recette.Categories.Any())
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Catégorie(s)</h6>
+                        @foreach (var cat in _recette.Categories)
+                        {
+                            <span class="badge bg-success me-1">@cat.Nom</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_recette.TypeCuisine))
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Type de cuisine</h6>
+                        <p class="mb-0">@_recette.TypeCuisine</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private RecetteDto? _recette;
+    private bool _chargement = true;
+    private bool _estAuteur;
+    private Guid? _utilisateurId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(claim?.Value, out var uid))
+            _utilisateurId = uid;
+
+        _recette = await Mediateur.Send(new ObtenirRecetteParIdQuery(Id, _utilisateurId));
+        _estAuteur = _recette?.AuteurId == _utilisateurId;
+        _chargement = false;
+    }
+
+    private async Task SupprimerRecette()
+    {
+        if (_utilisateurId == null) return;
+        await Mediateur.Send(new SupprimerRecetteCommand(Id, _utilisateurId.Value));
+        Navigation.NavigateTo("/mes-recettes");
+    }
+
+    private static string FormatQuantite(decimal quantite, UniteIngredient unite)
+    {
+        var qStr = quantite > 0 ? $"{quantite:G29} " : "";
+        var uStr = unite switch
+        {
+            UniteIngredient.Tasse => "tasse(s)",
+            UniteIngredient.Grammes => "g",
+            UniteIngredient.Kilogrammes => "kg",
+            UniteIngredient.Millilitres => "ml",
+            UniteIngredient.Litres => "L",
+            UniteIngredient.CuillereSoupe => "c. à soupe",
+            UniteIngredient.CuillereThe => "c. à thé",
+            UniteIngredient.Unite => string.Empty,
+            UniteIngredient.AuGout => "au goût",
+            _ => string.Empty
+        };
+        return $"{qStr}{uStr}".Trim();
+    }
+}

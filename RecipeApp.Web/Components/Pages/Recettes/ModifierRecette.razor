@@ -1,0 +1,318 @@
+@page "/recettes/{Id:guid}/modifier"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IMediator Mediateur
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Modifier la recette</PageTitle>
+
+<h1 class="mb-4">Modifier la recette</h1>
+
+@if (_chargement)
+{
+    <div class="text-center py-5"><div class="spinner-border text-success"></div></div>
+}
+else if (_recette == null)
+{
+    <div class="alert alert-warning">Recette introuvable ou accès refusé.</div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(_messageErreur))
+    {
+        <div class="alert alert-danger">@_messageErreur</div>
+    }
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Informations générales</h5></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" @bind="_titre" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" @bind="_description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Préparation (min)</label>
+                            <input type="number" class="form-control" @bind="_tempsPrep" min="0" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Cuisson (min)</label>
+                            <input type="number" class="form-control" @bind="_tempsCuisson" min="0" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Portions</label>
+                            <input type="number" class="form-control" @bind="_portions" min="1" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Difficulté</label>
+                            <select class="form-select" @bind="_difficulte">
+                                @foreach (var d in Enum.GetValues<Difficulte>())
+                                {
+                                    <option value="@d">@d</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Type de cuisine</label>
+                            <input type="text" class="form-control" @bind="_typeCuisine" />
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Visibilité</label>
+                            <select class="form-select" @bind="_visibilite">
+                                <option value="@Visibilite.Publique">Publique</option>
+                                <option value="@Visibilite.Privee">Privée</option>
+                                <option value="@Visibilite.Partagee">Partagée</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Photo (laisser vide pour conserver l'actuelle)</h5></div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(_recette.CheminImage))
+                    {
+                        <img src="@_recette.CheminImage" class="img-fluid rounded mb-2" style="max-height:150px;" alt="Photo actuelle" />
+                    }
+                    <UploadPhoto OnPhotoChoisie="OnPhotoChoisie" />
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Ingrédients</h5>
+                    @* Bouton masqué — sera activé une fois la clé API Anthropic configurée *@
+                    <button class="btn btn-sm btn-outline-primary" style="display:none"
+                            @onclick="() => _afficherUploadIngredients = !_afficherUploadIngredients">
+                        Importer par photo
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (_afficherUploadIngredients)
+                    {
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <UploadPhoto OnPhotoChoisie="ExtraireIngredients" LibelleBtn="Analyser la photo" />
+                            @if (_extractionEnCours)
+                            {
+                                <div class="mt-2"><span class="spinner-border spinner-border-sm me-2"></span> Analyse...</div>
+                            }
+                        </div>
+                    }
+                    <FormulaireIngredients @bind-Ingredients="_ingredients" />
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Étapes</h5></div>
+                <div class="card-body">
+                    <FormulaireEtapes @bind-Etapes="_etapes" />
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Catégories</h5></div>
+                <div class="card-body">
+                    @foreach (var cat in _categories)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="cat_@cat.Id"
+                                   checked="@_categoriesSelectionnees.Contains(cat.Id)"
+                                   @onchange="e => ToggleCategorie(cat.Id, (bool)(e.Value ?? false))" />
+                            <label class="form-check-label" for="cat_@cat.Id">@cat.Nom</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0">Étiquettes</h5></div>
+                <div class="card-body">
+                    @foreach (var etiq in _etiquettes)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="etiq_@etiq.Id"
+                                   checked="@_etiquettesSelectionnees.Contains(etiq.Id)"
+                                   @onchange="e => ToggleEtiquette(etiq.Id, (bool)(e.Value ?? false))" />
+                            <label class="form-check-label" for="etiq_@etiq.Id">@etiq.Nom</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button class="btn btn-success btn-lg" @onclick="Sauvegarder" disabled="@_sauvegarde">
+                    @if (_sauvegarde) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                    Enregistrer
+                </button>
+                <a href="/recettes/@Id" class="btn btn-outline-secondary">Annuler</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private RecetteDto? _recette;
+    private string _titre = string.Empty;
+    private string? _description;
+    private int _tempsPrep;
+    private int _tempsCuisson;
+    private int _portions = 4;
+    private Difficulte _difficulte = Difficulte.Facile;
+    private string? _typeCuisine;
+    private Visibilite _visibilite = Visibilite.Publique;
+    private string? _imageBase64;
+    private string? _imageTypeMime;
+    private bool _afficherUploadIngredients;
+    private bool _extractionEnCours;
+    private bool _sauvegarde;
+    private bool _chargement = true;
+    private string? _messageErreur;
+
+    private List<IngredientDto> _ingredients = new();
+    private List<EtapeDto> _etapes = new();
+    private List<CategorieDto> _categories = new();
+    private List<EtiquetteDto> _etiquettes = new();
+    private HashSet<Guid> _categoriesSelectionnees = new();
+    private HashSet<Guid> _etiquettesSelectionnees = new();
+    private Guid _utilisateurId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(claim?.Value, out _utilisateurId))
+        {
+            Navigation.NavigateTo("/compte/connexion");
+            return;
+        }
+
+        await Task.WhenAll(
+            ChargerRecette(),
+            ChargerReferences()
+        );
+        _chargement = false;
+    }
+
+    private async Task ChargerRecette()
+    {
+        _recette = await Mediateur.Send(new ObtenirRecetteParIdQuery(Id, _utilisateurId));
+        if (_recette == null || _recette.AuteurId != _utilisateurId) return;
+
+        _titre = _recette.Titre;
+        _description = _recette.Description;
+        _tempsPrep = _recette.TempsPreparation;
+        _tempsCuisson = _recette.TempsCuisson;
+        _portions = _recette.NombrePortions;
+        _difficulte = _recette.Difficulte;
+        _typeCuisine = _recette.TypeCuisine;
+        _visibilite = _recette.Visibilite;
+        _ingredients = _recette.Ingredients.ToList();
+        _etapes = _recette.Etapes.ToList();
+        _categoriesSelectionnees = _recette.Categories.Select(c => c.Id).ToHashSet();
+        _etiquettesSelectionnees = _recette.Etiquettes.Select(e => e.Id).ToHashSet();
+    }
+
+    private async Task ChargerReferences()
+    {
+        _categories = await Mediateur.Send(new ObtenirCategoriesQuery());
+        _etiquettes = await Mediateur.Send(new ObtenirEtiquettesQuery());
+    }
+
+    private void OnPhotoChoisie((string Base64, string TypeMime) photo)
+    {
+        _imageBase64 = photo.Base64;
+        _imageTypeMime = photo.TypeMime;
+    }
+
+    private async Task ExtraireIngredients((string Base64, string TypeMime) photo)
+    {
+        _extractionEnCours = true;
+        try
+        {
+            var extraits = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireIngredients.ExtraireIngredientsCommand
+            {
+                ImageBase64 = photo.Base64,
+                TypeMime = photo.TypeMime
+            });
+            foreach (var ing in extraits)
+            {
+                ing.Ordre = _ingredients.Count + 1;
+                _ingredients.Add(ing);
+            }
+            _afficherUploadIngredients = false;
+        }
+        catch (Exception ex)
+        {
+            _messageErreur = $"Erreur lors de l'extraction : {ex.Message}";
+        }
+        finally
+        {
+            _extractionEnCours = false;
+        }
+    }
+
+    private void ToggleCategorie(Guid id, bool selectionne)
+    {
+        if (selectionne) _categoriesSelectionnees.Add(id);
+        else _categoriesSelectionnees.Remove(id);
+    }
+
+    private void ToggleEtiquette(Guid id, bool selectionne)
+    {
+        if (selectionne) _etiquettesSelectionnees.Add(id);
+        else _etiquettesSelectionnees.Remove(id);
+    }
+
+    private async Task Sauvegarder()
+    {
+        _messageErreur = null;
+        _sauvegarde = true;
+
+        try
+        {
+            var commande = new ModifierRecetteCommand
+            {
+                Id = Id,
+                AuteurId = _utilisateurId,
+                Titre = _titre,
+                Description = _description,
+                TempsPreparation = _tempsPrep,
+                TempsCuisson = _tempsCuisson,
+                NombrePortions = _portions,
+                Difficulte = _difficulte,
+                TypeCuisine = _typeCuisine,
+                Visibilite = _visibilite,
+                ImageBase64 = _imageBase64,
+                ImageTypeMime = _imageTypeMime,
+                Ingredients = _ingredients.Where(i => !string.IsNullOrWhiteSpace(i.Nom)).ToList(),
+                Etapes = _etapes.Where(e => !string.IsNullOrWhiteSpace(e.Description)).ToList(),
+                CategoriesIds = _categoriesSelectionnees.ToList(),
+                EtiquettesIds = _etiquettesSelectionnees.ToList()
+            };
+
+            await Mediateur.Send(commande);
+            Navigation.NavigateTo($"/recettes/{Id}");
+        }
+        catch (Exception ex)
+        {
+            _messageErreur = ex.Message;
+            _sauvegarde = false;
+        }
+    }
+}

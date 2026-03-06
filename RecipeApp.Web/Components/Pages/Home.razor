@@ -1,7 +1,65 @@
-﻿@page "/"
+@page "/"
+@using MediatR
+@inject IMediator Mediateur
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
-<PageTitle>Home</PageTitle>
+<PageTitle>RecetteApp — Accueil</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="p-5 mb-4 bg-success text-white rounded">
+    <h1 class="display-5 fw-bold">Bienvenue sur RecetteApp</h1>
+    <p class="lead">Découvrez, créez et partagez vos recettes favorites.</p>
+    <a class="btn btn-light btn-lg" href="/recettes">Parcourir les recettes</a>
+    <AuthorizeView>
+        <NotAuthorized>
+            <a class="btn btn-outline-light btn-lg ms-2" href="/compte/inscription">Créer un compte</a>
+        </NotAuthorized>
+        <Authorized>
+            <a class="btn btn-warning btn-lg ms-2" href="/recettes/creer">+ Ajouter une recette</a>
+        </Authorized>
+    </AuthorizeView>
+</div>
 
-Welcome to your new app.
+<h2 class="mb-3">Recettes récentes</h2>
+
+@if (_chargement)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-success"></div>
+    </div>
+}
+else if (_recettes.Count == 0)
+{
+    <div class="alert alert-info">Aucune recette publique pour l'instant. Soyez le premier à en créer une !</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var recette in _recettes)
+        {
+            <div class="col">
+                <CarteRecette Recette="recette" />
+            </div>
+        }
+    </div>
+    <div class="text-center mt-4">
+        <a href="/recettes" class="btn btn-outline-success">Voir toutes les recettes</a>
+    </div>
+}
+
+@code {
+    private List<RecetteDto> _recettes = new();
+    private bool _chargement = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultat = await Mediateur.Send(new RechercherRecettesQuery
+        {
+            IncluirePubliques = true,
+            TaillePage = 6,
+            Page = 1
+        });
+
+        _recettes = resultat.Elements.ToList();
+        _chargement = false;
+    }
+}

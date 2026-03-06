@@ -1,0 +1,86 @@
+@using RecipeApp.Application.DTOs
+
+<div>
+    @for (int i = 0; i < Etapes.Count; i++)
+    {
+        var index = i;
+        var etape = Etapes[index];
+
+        <div class="row g-2 mb-2 align-items-start"
+             draggable="true"
+             @ondragstart="() => DemarrerDrag(index)"
+             @ondragover:preventDefault="true"
+             @ondrop="() => DeposerSur(index)"
+             style="cursor: grab;">
+
+            <div class="col-auto">
+                <span class="badge bg-success rounded-pill mt-2" style="font-size:1rem;min-width:2rem;">@(index + 1)</span>
+            </div>
+            <div class="col">
+                <textarea class="form-control form-control-sm"
+                          rows="2"
+                          placeholder="Décrivez cette étape..."
+                          value="@etape.Description"
+                          @onchange="e => { etape.Description = e.Value?.ToString() ?? string.Empty; NotifierChangement(); }"></textarea>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-sm btn-outline-danger mt-1" @onclick="() => Supprimer(index)" disabled="@(Etapes.Count <= 1)">−</button>
+            </div>
+        </div>
+    }
+
+    <button type="button" class="btn btn-sm btn-outline-success mt-1" @onclick="Ajouter">
+        + Ajouter une étape
+    </button>
+</div>
+
+@code {
+    [Parameter] public List<EtapeDto> Etapes { get; set; } = new();
+    [Parameter] public EventCallback<List<EtapeDto>> EtapesChanged { get; set; }
+
+    private int _indiceDrag = -1;
+
+    private void Ajouter()
+    {
+        Etapes.Add(new EtapeDto { Id = Guid.NewGuid(), NumeroEtape = Etapes.Count + 1 });
+        NotifierChangement();
+    }
+
+    private void Supprimer(int index)
+    {
+        if (Etapes.Count > 1)
+        {
+            Etapes.RemoveAt(index);
+            Renumeroter();
+            NotifierChangement();
+        }
+    }
+
+    private void DemarrerDrag(int index)
+    {
+        _indiceDrag = index;
+    }
+
+    private void DeposerSur(int indexCible)
+    {
+        if (_indiceDrag < 0 || _indiceDrag == indexCible) return;
+
+        var element = Etapes[_indiceDrag];
+        Etapes.RemoveAt(_indiceDrag);
+        Etapes.Insert(indexCible, element);
+        _indiceDrag = -1;
+        Renumeroter();
+        NotifierChangement();
+    }
+
+    private void Renumeroter()
+    {
+        for (int i = 0; i < Etapes.Count; i++)
+            Etapes[i].NumeroEtape = i + 1;
+    }
+
+    private void NotifierChangement()
+    {
+        EtapesChanged.InvokeAsync(Etapes);
+    }
+}

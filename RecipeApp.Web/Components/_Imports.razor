@@ -1,11 +1,22 @@
-﻿@using System.Net.Http
+@using System.Net.Http
 @using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
 @using static Microsoft.AspNetCore.Components.Web.RenderMode
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.JSInterop
+@using RecipeApp.Application.DTOs
+@using RecipeApp.Application.Recettes.Commands.CreerRecette
+@using RecipeApp.Application.Recettes.Commands.ModifierRecette
+@using RecipeApp.Application.Recettes.Commands.SupprimerRecette
+@using RecipeApp.Application.Recettes.Queries.ObtenirRecetteParId
+@using RecipeApp.Application.Recettes.Queries.RechercherRecettes
+@using RecipeApp.Application.Recettes.Queries.ObtenirCategories
+@using RecipeApp.Application.Recettes.Queries.ObtenirEtiquettes
+@using RecipeApp.Domain.Enums
 @using RecipeApp.Web
 @using RecipeApp.Web.Components
 @using RecipeApp.Web.Components.Layout
+@using RecipeApp.Web.Components.Partages

@@ -1,0 +1,84 @@
+@page "/compte/connexion"
+@using Microsoft.AspNetCore.Identity
+@using RecipeApp.Infrastructure.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject NavigationManager Navigation
+<PageTitle>Connexion</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Connexion</h2>
+
+                @if (!string.IsNullOrEmpty(_messageErreur))
+                {
+                    <div class="alert alert-danger">@_messageErreur</div>
+                }
+
+                <EditForm method="post" Model="Modele" OnValidSubmit="SeConnecter" FormName="connexion">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">Adresse e-mail</label>
+                        <InputText @bind-Value="Modele!.Email" class="form-control" type="email" autocomplete="email" />
+                        <ValidationMessage For="() => Modele!.Email" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe</label>
+                        <InputText @bind-Value="Modele!.MotDePasse" class="form-control" type="password" autocomplete="current-password" />
+                        <ValidationMessage For="() => Modele!.MotDePasse" />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <InputCheckbox @bind-Value="Modele!.SeSouvenir" class="form-check-input" id="seSouvenir" />
+                        <label class="form-check-label" for="seSouvenir">Se souvenir de moi</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">Connexion</button>
+                </EditForm>
+
+                <hr />
+                <p class="text-center mb-0">
+                    Pas encore de compte ? <a href="/compte/inscription">S'inscrire</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private ModeleConnexion? Modele { get; set; }
+
+    private string? _messageErreur;
+
+    [SupplyParameterFromQuery]
+    private string? RetourUrl { get; set; }
+
+    protected override void OnInitialized() => Modele ??= new();
+
+    private async Task SeConnecter()
+    {
+        var resultat = await SignInManager.PasswordSignInAsync(
+            Modele!.Email, Modele.MotDePasse, Modele.SeSouvenir, lockoutOnFailure: false);
+
+        if (resultat.Succeeded)
+            Navigation.NavigateTo(RetourUrl ?? "/");
+        else
+            _messageErreur = "Email ou mot de passe incorrect.";
+    }
+
+    private class ModeleConnexion
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "L'email est obligatoire.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Email invalide.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Le mot de passe est obligatoire.")]
+        public string MotDePasse { get; set; } = string.Empty;
+
+        public bool SeSouvenir { get; set; }
+    }
+}

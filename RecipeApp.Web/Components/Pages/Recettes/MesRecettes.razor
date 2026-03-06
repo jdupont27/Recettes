@@ -1,0 +1,72 @@
+@page "/mes-recettes"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using MediatR
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IMediator Mediateur
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Mes recettes</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Mes recettes</h1>
+    <a href="/recettes/creer" class="btn btn-success">+ Nouvelle recette</a>
+</div>
+
+@if (_chargement)
+{
+    <div class="text-center py-5"><div class="spinner-border text-success"></div></div>
+}
+else if (!_recettes.Any())
+{
+    <div class="alert alert-info">
+        Vous n'avez pas encore créé de recette.
+        <a href="/recettes/creer" class="alert-link">Créer ma première recette</a>
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var recette in _recettes)
+        {
+            <div class="col">
+                <CarteRecette Recette="recette" AfficherActions="true" OnSuppression="() => SupprimerRecette(recette.Id)" />
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<RecetteDto> _recettes = new();
+    private bool _chargement = true;
+    private Guid _utilisateurId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(claim?.Value, out _utilisateurId))
+        {
+            Navigation.NavigateTo("/compte/connexion");
+            return;
+        }
+
+        var resultat = await Mediateur.Send(new RechercherRecettesQuery
+        {
+            AuteurId = _utilisateurId,
+            UtilisateurConnecteId = _utilisateurId,
+            IncluirePubliques = true,
+            TaillePage = 50
+        });
+
+        _recettes = resultat.Elements.ToList();
+        _chargement = false;
+    }
+
+    private async Task SupprimerRecette(Guid id)
+    {
+        await Mediateur.Send(new SupprimerRecetteCommand(id, _utilisateurId));
+        _recettes.RemoveAll(r => r.Id == id);
+    }
+}

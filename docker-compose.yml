@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: RecipeApp.Web/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=RecipeApp;Uid=recipeapp;Pwd=recipeapp_password;
+      - Anthropic__ApiKey=${ANTHROPIC_API_KEY}
+      - Anthropic__Model=claude-opus-4-6
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - app_uploads:/app/wwwroot/uploads
+    restart: unless-stopped
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_secret
+      MYSQL_DATABASE: RecipeApp
+      MYSQL_USER: recipeapp
+      MYSQL_PASSWORD: recipeapp_password
+    # Port non exposé sur l'hôte — l'app et phpMyAdmin y accèdent via le réseau Docker interne
+    # Décommenter la ligne ci-dessous si vous avez besoin d'accès direct depuis un client SQL local
+    # ports:
+    #   - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "recipeapp", "-precipeapp_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: root_password_secret
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  app_uploads:

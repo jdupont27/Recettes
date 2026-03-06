@@ -1,0 +1,107 @@
+@using RecipeApp.Application.DTOs
+@using RecipeApp.Domain.Enums
+
+<div>
+    @for (int i = 0; i < Ingredients.Count; i++)
+    {
+        var index = i;
+        var ingredient = Ingredients[index];
+
+        <div class="row g-2 mb-2 align-items-center"
+             draggable="true"
+             @ondragstart="() => DemarrerDrag(index)"
+             @ondragover:preventDefault="true"
+             @ondrop="() => DeposerSur(index)"
+             style="cursor: grab;">
+
+            <div class="col-auto text-muted" title="Glisser-déposer pour réordonner">☰</div>
+
+            <div class="col">
+                <input type="text" class="form-control form-control-sm"
+                       placeholder="Nom de l'ingrédient"
+                       value="@ingredient.Nom"
+                       @onchange="e => { ingredient.Nom = e.Value?.ToString() ?? string.Empty; NotifierChangement(); }" />
+            </div>
+            <div class="col-2">
+                <input type="number" class="form-control form-control-sm"
+                       placeholder="Qté"
+                       min="0" step="0.01"
+                       value="@ingredient.Quantite"
+                       @onchange="e => { if (decimal.TryParse(e.Value?.ToString(), out var q)) { ingredient.Quantite = q; NotifierChangement(); } }" />
+            </div>
+            <div class="col-3">
+                <select class="form-select form-select-sm"
+                        value="@ingredient.Unite"
+                        @onchange="e => { if (Enum.TryParse<UniteIngredient>(e.Value?.ToString(), out var u)) { ingredient.Unite = u; NotifierChangement(); } }">
+                    <option value="@UniteIngredient.Tasse">tasse</option>
+                    <option value="@UniteIngredient.Grammes">g</option>
+                    <option value="@UniteIngredient.Kilogrammes">kg</option>
+                    <option value="@UniteIngredient.Millilitres">ml</option>
+                    <option value="@UniteIngredient.Litres">L</option>
+                    <option value="@UniteIngredient.CuillereSoupe">c. à soupe</option>
+                    <option value="@UniteIngredient.CuillereThe">c. à thé</option>
+                    <option value="@UniteIngredient.Unite">unité</option>
+                    <option value="@UniteIngredient.AuGout">au goût</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => Supprimer(index)" disabled="@(Ingredients.Count <= 1)">−</button>
+            </div>
+        </div>
+    }
+
+    <button type="button" class="btn btn-sm btn-outline-success mt-1" @onclick="Ajouter">
+        + Ajouter un ingrédient
+    </button>
+</div>
+
+@code {
+    [Parameter] public List<IngredientDto> Ingredients { get; set; } = new();
+    [Parameter] public EventCallback<List<IngredientDto>> IngredientsChanged { get; set; }
+
+    private int _indiceDrag = -1;
+
+    private void Ajouter()
+    {
+        Ingredients.Add(new IngredientDto { Id = Guid.NewGuid(), Ordre = Ingredients.Count + 1 });
+        NotifierChangement();
+    }
+
+    private void Supprimer(int index)
+    {
+        if (Ingredients.Count > 1)
+        {
+            Ingredients.RemoveAt(index);
+            RenuméroterOrdre();
+            NotifierChangement();
+        }
+    }
+
+    private void DemarrerDrag(int index)
+    {
+        _indiceDrag = index;
+    }
+
+    private void DeposerSur(int indexCible)
+    {
+        if (_indiceDrag < 0 || _indiceDrag == indexCible) return;
+
+        var element = Ingredients[_indiceDrag];
+        Ingredients.RemoveAt(_indiceDrag);
+        Ingredients.Insert(indexCible, element);
+        _indiceDrag = -1;
+        RenuméroterOrdre();
+        NotifierChangement();
+    }
+
+    private void RenuméroterOrdre()
+    {
+        for (int i = 0; i < Ingredients.Count; i++)
+            Ingredients[i].Ordre = i + 1;
+    }
+
+    private void NotifierChangement()
+    {
+        IngredientsChanged.InvokeAsync(Ingredients);
+    }
+}

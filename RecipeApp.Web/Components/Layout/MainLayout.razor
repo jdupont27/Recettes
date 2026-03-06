@@ -1,23 +1,19 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<NavMenu />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+<div class="container mt-4">
+    @Body
 </div>
 
+<footer class="py-3 bg-light border-top mt-5">
+    <div class="container text-center text-muted">
+        <small>RecetteApp &copy; @DateTime.Now.Year</small>
+    </div>
+</footer>
+
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    Une erreur inattendue est survenue.
+    <a href="." class="reload">Recharger</a>
+    <span class="dismiss">&#10006;</span>
 </div>

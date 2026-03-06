@@ -1,6 +1,17 @@
-﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+<Router AppAssembly="typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <p>Vous devez être <a href="/compte/connexion">connecté</a> pour accéder à cette page.</p>
+            </NotAuthorized>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
+    <NotFound>
+        <PageTitle>Page introuvable</PageTitle>
+        <LayoutView Layout="typeof(Layout.MainLayout)">
+            <h1>Page introuvable</h1>
+            <p>La page demandée n'existe pas. <a href="/">Retour à l'accueil</a></p>
+        </LayoutView>
+    </NotFound>
 </Router>

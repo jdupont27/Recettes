@@ -1,0 +1,113 @@
+@using RecipeApp.Application.DTOs
+@using RecipeApp.Application.Recettes.Queries.RechercherRecettes
+@using RecipeApp.Domain.Enums
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <!-- Recherche texte libre -->
+            <div class="col-md-4">
+                <input type="text" class="form-control" placeholder="Titre, ingrédient..."
+                       @bind="_texteLibre" @bind:event="oninput" @onkeyup="EnvoieFiltre" />
+            </div>
+
+            <!-- Catégorie -->
+            <div class="col-md-2">
+                <select class="form-select" @bind="_categorieId" @bind:after="EnvoieFiltre">
+                    <option value="">Toutes catégories</option>
+                    @foreach (var cat in Categories)
+                    {
+                        <option value="@cat.Id">@cat.Nom</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Difficulté -->
+            <div class="col-md-2">
+                <select class="form-select" @bind="_difficulte" @bind:after="EnvoieFiltre">
+                    <option value="">Toutes difficultés</option>
+                    @foreach (var d in Enum.GetValues<Difficulte>())
+                    {
+                        <option value="@d">@d</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Temps max -->
+            <div class="col-md-2">
+                <input type="number" class="form-control" placeholder="Temps max (min)"
+                       @bind="_tempsMax" @bind:after="EnvoieFiltre" min="0" />
+            </div>
+
+            <!-- Bouton reset -->
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" @onclick="Reinitialiser">Réinitialiser</button>
+            </div>
+        </div>
+
+        <!-- Étiquettes -->
+        @if (Etiquettes.Any())
+        {
+            <div class="mt-3">
+                <small class="text-muted me-2">Étiquettes :</small>
+                @foreach (var etiq in Etiquettes)
+                {
+                    var estSelectionnee = _etiquettesSelectionnees.Contains(etiq.Id);
+                    <button type="button"
+                            class="btn btn-sm me-1 mb-1 @(estSelectionnee ? "btn-secondary" : "btn-outline-secondary")"
+                            @onclick="() => ToggleEtiquette(etiq.Id)">
+                        @etiq.Nom
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<CategorieDto> Categories { get; set; } = new();
+    [Parameter] public List<EtiquetteDto> Etiquettes { get; set; } = new();
+    [Parameter] public EventCallback<RechercherRecettesQuery> OnFiltreChange { get; set; }
+
+    private string? _texteLibre;
+    private string? _categorieId;
+    private string? _difficulte;
+    private int? _tempsMax;
+    private HashSet<Guid> _etiquettesSelectionnees = new();
+
+    private async Task EnvoieFiltre()
+    {
+        Guid? catId = Guid.TryParse(_categorieId, out var cid) ? cid : null;
+        Difficulte? diff = Enum.TryParse<Difficulte>(_difficulte, out var d) ? d : null;
+
+        await OnFiltreChange.InvokeAsync(new RechercherRecettesQuery
+        {
+            TexteLibre = _texteLibre,
+            CategorieId = catId,
+            Difficulte = diff,
+            TempsMaxMinutes = _tempsMax,
+            EtiquettesIds = _etiquettesSelectionnees.ToList(),
+            IncluirePubliques = true
+        });
+    }
+
+    private async Task ToggleEtiquette(Guid id)
+    {
+        if (_etiquettesSelectionnees.Contains(id))
+            _etiquettesSelectionnees.Remove(id);
+        else
+            _etiquettesSelectionnees.Add(id);
+
+        await EnvoieFiltre();
+    }
+
+    private async Task Reinitialiser()
+    {
+        _texteLibre = null;
+        _categorieId = null;
+        _difficulte = null;
+        _tempsMax = null;
+        _etiquettesSelectionnees.Clear();
+        await EnvoieFiltre();
+    }
+}

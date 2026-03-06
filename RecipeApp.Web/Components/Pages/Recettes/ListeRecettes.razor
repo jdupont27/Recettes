@@ -1,0 +1,108 @@
+@page "/recettes"
+@using MediatR
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject IMediator Mediateur
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Recettes</PageTitle>
+
+<h1 class="mb-4">Recettes</h1>
+
+<FiltreRecherche OnFiltreChange="AppliquerFiltre" Categories="_categories" Etiquettes="_etiquettes" />
+
+@if (_chargement)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-success"></div>
+    </div>
+}
+else if (!_recettes.Any())
+{
+    <div class="alert alert-info mt-4">Aucune recette ne correspond à vos critères.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4 mt-2">
+        @foreach (var recette in _recettes)
+        {
+            <div class="col">
+                <CarteRecette Recette="recette" />
+            </div>
+        }
+    </div>
+
+    @if (_nombrePages > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center">
+            <ul class="pagination">
+                @for (int p = 1; p <= _nombrePages; p++)
+                {
+                    var numPage = p;
+                    <li class="page-item @(numPage == _pageCourante ? "active" : "")">
+                        <button class="page-link" @onclick="() => ChangerPage(numPage)">@numPage</button>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+
+    <p class="text-muted text-center">@_total recette(s) trouvée(s)</p>
+}
+
+@code {
+    private List<RecetteDto> _recettes = new();
+    private List<CategorieDto> _categories = new();
+    private List<EtiquetteDto> _etiquettes = new();
+    private bool _chargement = true;
+    private int _total;
+    private int _pageCourante = 1;
+    private int _nombrePages;
+    private RechercherRecettesQuery _filtreActuel = new() { IncluirePubliques = true, TaillePage = 12 };
+    private Guid? _utilisateurId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var claim = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(claim?.Value, out var uid))
+                _utilisateurId = uid;
+        }
+
+        await ChargerCategoriesEtEtiquettes();
+        await ChargerRecettes();
+    }
+
+    private async Task ChargerCategoriesEtEtiquettes()
+    {
+        _categories = await Mediateur.Send(new ObtenirCategoriesQuery());
+        _etiquettes = await Mediateur.Send(new ObtenirEtiquettesQuery());
+    }
+
+    private async Task ChargerRecettes()
+    {
+        _chargement = true;
+        var requete = _filtreActuel with { Page = _pageCourante, UtilisateurConnecteId = _utilisateurId };
+        var resultat = await Mediateur.Send(requete);
+        _recettes = resultat.Elements.ToList();
+        _total = resultat.Total;
+        _nombrePages = resultat.NombrePages;
+        _chargement = false;
+    }
+
+    private async Task AppliquerFiltre(RechercherRecettesQuery filtre)
+    {
+        _filtreActuel = filtre;
+        _pageCourante = 1;
+        await ChargerRecettes();
+    }
+
+    private async Task ChangerPage(int page)
+    {
+        _pageCourante = page;
+        await ChargerRecettes();
+    }
+}
