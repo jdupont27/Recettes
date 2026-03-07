@@ -15,12 +15,16 @@ public static class DependencyInjection
 {
     public static IServiceCollection AjouterCoucheInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // Base de données MySQL avec EF Core
         var chaineConnexion = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Chaîne de connexion 'DefaultConnection' manquante.");
 
-        services.AddDbContext<AppDbContext>(options =>
+        // Factory pour Blazor Server — chaque opération crée son propre DbContext
+        services.AddDbContextFactory<AppDbContext>(options =>
             options.UseMySql(chaineConnexion, ServerVersion.AutoDetect(chaineConnexion)));
+
+        // Contexte scoped pour ASP.NET Identity (SignInManager, UserManager)
+        services.AddScoped<AppDbContext>(sp =>
+            sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
         // ASP.NET Identity
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -34,11 +38,13 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
 
-        // Repositories
-        services.AddScoped<IRecetteRepository, RecetteRepository>();
+        // Repositories de lecture — contexte frais par méthode (thread-safe Blazor Server)
+        services.AddScoped<IRecetteRepository, RecetteQueryRepository>();
         services.AddScoped<ICategorieRepository, CategorieRepository>();
         services.AddScoped<IEtiquetteRepository, EtiquetteRepository>();
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // Unité de travail — contexte frais par commande (écriture atomique)
+        services.AddTransient<IUnitesDeTravail, UnitesDeTravail>();
 
         // Services applicatifs
         services.AddScoped<ICurrentUserService, CurrentUserService>();

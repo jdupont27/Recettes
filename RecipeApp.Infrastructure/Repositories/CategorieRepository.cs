@@ -7,26 +7,30 @@ namespace RecipeApp.Infrastructure.Repositories;
 
 public class CategorieRepository : ICategorieRepository
 {
-    private readonly AppDbContext _contexte;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public CategorieRepository(AppDbContext contexte)
+    public CategorieRepository(IDbContextFactory<AppDbContext> factory)
     {
-        _contexte = contexte;
+        _factory = factory;
     }
 
     public async Task<IEnumerable<Categorie>> ObtenirToutesAsync(CancellationToken annulation = default)
     {
-        return await _contexte.Categories.OrderBy(c => c.Nom).ToListAsync(annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        return await ctx.Categories.OrderBy(c => c.Nom).ToListAsync(annulation);
     }
 
     public async Task<Categorie?> ObtenirParIdAsync(Guid id, CancellationToken annulation = default)
     {
-        return await _contexte.Categories.FindAsync([id], annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        return await ctx.Categories.FindAsync([id], annulation);
     }
 
     public async Task<Categorie> AjouterAsync(Categorie categorie, CancellationToken annulation = default)
     {
-        await _contexte.Categories.AddAsync(categorie, annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        await ctx.Categories.AddAsync(categorie, annulation);
+        await ctx.SaveChangesAsync(annulation);
         return categorie;
     }
 }

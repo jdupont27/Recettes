@@ -9,23 +9,19 @@ namespace RecipeApp.Application.Recettes.Commands.CreerRecette;
 
 public class CreerRecetteCommandHandler : IRequestHandler<CreerRecetteCommand, RecetteDto>
 {
-    private readonly IRecetteRepository _recetteRepository;
+    private readonly IUnitesDeTravail _unitesDeTravail;
     private readonly IServiceFichiers _serviceFichiers;
-    private readonly IUnitOfWork _unitOfWork;
 
-    public CreerRecetteCommandHandler(
-        IRecetteRepository recetteRepository,
-        IServiceFichiers serviceFichiers,
-        IUnitOfWork unitOfWork)
+    public CreerRecetteCommandHandler(IUnitesDeTravail unitesDeTravail, IServiceFichiers serviceFichiers)
     {
-        _recetteRepository = recetteRepository;
+        _unitesDeTravail = unitesDeTravail;
         _serviceFichiers = serviceFichiers;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task<RecetteDto> Handle(CreerRecetteCommand commande, CancellationToken annulation)
     {
-        // Sauvegarder l'image si fournie
+        await using var _ = _unitesDeTravail;
+
         string? cheminImage = null;
         if (!string.IsNullOrEmpty(commande.ImageBase64) && !string.IsNullOrEmpty(commande.ImageTypeMime))
             cheminImage = await _serviceFichiers.SauvegarderImageAsync(commande.ImageBase64, commande.ImageTypeMime, annulation);
@@ -43,10 +39,12 @@ public class CreerRecetteCommandHandler : IRequestHandler<CreerRecetteCommand, R
             Visibilite = commande.Visibilite,
             DateCreation = DateTime.UtcNow,
             AuteurId = commande.AuteurId,
-            CheminImage = cheminImage
+            CheminImage = cheminImage,
+            LienSecret = commande.Visibilite == Domain.Enums.Visibilite.Partagee
+                ? Guid.NewGuid().ToString("N")
+                : null
         };
 
-        // Ajouter les ingrédients
         for (int i = 0; i < commande.Ingredients.Count; i++)
         {
             var dto = commande.Ingredients[i];
@@ -61,7 +59,6 @@ public class CreerRecetteCommandHandler : IRequestHandler<CreerRecetteCommand, R
             });
         }
 
-        // Ajouter les étapes de préparation
         for (int i = 0; i < commande.Etapes.Count; i++)
         {
             var dto = commande.Etapes[i];
@@ -74,16 +71,14 @@ public class CreerRecetteCommandHandler : IRequestHandler<CreerRecetteCommand, R
             });
         }
 
-        // Associer les catégories
         foreach (var categorieId in commande.CategoriesIds)
             recette.RecetteCategories.Add(new RecetteCategorie { RecetteId = recette.Id, CategorieId = categorieId });
 
-        // Associer les étiquettes
         foreach (var etiquetteId in commande.EtiquettesIds)
             recette.RecetteEtiquettes.Add(new RecetteEtiquette { RecetteId = recette.Id, EtiquetteId = etiquetteId });
 
-        await _recetteRepository.AjouterAsync(recette, annulation);
-        await _unitOfWork.SauvegarderAsync(annulation);
+        await _unitesDeTravail.Recettes.AjouterAsync(recette, annulation);
+        await _unitesDeTravail.SauvegarderAsync(annulation);
 
         return MappeurRecette.VersDto(recette);
     }

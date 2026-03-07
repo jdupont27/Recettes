@@ -23,6 +23,7 @@ public class Recette
     public DateTime? DateModification { get; set; }
     public Guid AuteurId { get; set; }
     public string? CheminImage { get; set; }
+    public string? LienSecret { get; set; }
 
     // Propriétés de navigation
     public ICollection<Ingredient> Ingredients { get; set; } = new List<Ingredient>();

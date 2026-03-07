@@ -6,34 +6,30 @@ namespace RecipeApp.Application.Recettes.Commands.SupprimerRecette;
 
 public class SupprimerRecetteCommandHandler : IRequestHandler<SupprimerRecetteCommand, Unit>
 {
-    private readonly IRecetteRepository _recetteRepository;
+    private readonly IUnitesDeTravail _unitesDeTravail;
     private readonly IServiceFichiers _serviceFichiers;
-    private readonly IUnitOfWork _unitOfWork;
 
-    public SupprimerRecetteCommandHandler(
-        IRecetteRepository recetteRepository,
-        IServiceFichiers serviceFichiers,
-        IUnitOfWork unitOfWork)
+    public SupprimerRecetteCommandHandler(IUnitesDeTravail unitesDeTravail, IServiceFichiers serviceFichiers)
     {
-        _recetteRepository = recetteRepository;
+        _unitesDeTravail = unitesDeTravail;
         _serviceFichiers = serviceFichiers;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task<Unit> Handle(SupprimerRecetteCommand commande, CancellationToken annulation)
     {
-        var recette = await _recetteRepository.ObtenirParIdAsync(commande.Id, annulation)
+        await using var _ = _unitesDeTravail;
+
+        var recette = await _unitesDeTravail.Recettes.ObtenirParIdAsync(commande.Id, annulation)
             ?? throw new KeyNotFoundException($"Recette {commande.Id} introuvable.");
 
         if (recette.AuteurId != commande.AuteurId)
             throw new UnauthorizedAccessException("Vous n'êtes pas autorisé à supprimer cette recette.");
 
-        // Supprimer l'image associée si elle existe
         if (!string.IsNullOrEmpty(recette.CheminImage))
             await _serviceFichiers.SupprimerImageAsync(recette.CheminImage, annulation);
 
-        await _recetteRepository.SupprimerAsync(commande.Id, annulation);
-        await _unitOfWork.SauvegarderAsync(annulation);
+        await _unitesDeTravail.Recettes.SupprimerAsync(commande.Id, annulation);
+        await _unitesDeTravail.SauvegarderAsync(annulation);
 
         return Unit.Value;
     }

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker exec recettes-db-1 mysql -u recipeapp -precipeapp_password RecipeApp -e \"DESCRIBE Recettes; DESCRIBE Ingredients;\")",
+      "Bash(dotnet build --no-restore)",
+      "Bash(dotnet build)"
+    ]
+  }
+}

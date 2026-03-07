@@ -7,26 +7,30 @@ namespace RecipeApp.Infrastructure.Repositories;
 
 public class EtiquetteRepository : IEtiquetteRepository
 {
-    private readonly AppDbContext _contexte;
+    private readonly IDbContextFactory<AppDbContext> _factory;
 
-    public EtiquetteRepository(AppDbContext contexte)
+    public EtiquetteRepository(IDbContextFactory<AppDbContext> factory)
     {
-        _contexte = contexte;
+        _factory = factory;
     }
 
     public async Task<IEnumerable<Etiquette>> ObtenirToutesAsync(CancellationToken annulation = default)
     {
-        return await _contexte.Etiquettes.OrderBy(e => e.Nom).ToListAsync(annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        return await ctx.Etiquettes.OrderBy(e => e.Nom).ToListAsync(annulation);
     }
 
     public async Task<Etiquette?> ObtenirParIdAsync(Guid id, CancellationToken annulation = default)
     {
-        return await _contexte.Etiquettes.FindAsync([id], annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        return await ctx.Etiquettes.FindAsync([id], annulation);
     }
 
     public async Task<Etiquette> AjouterAsync(Etiquette etiquette, CancellationToken annulation = default)
     {
-        await _contexte.Etiquettes.AddAsync(etiquette, annulation);
+        await using var ctx = await _factory.CreateDbContextAsync(annulation);
+        await ctx.Etiquettes.AddAsync(etiquette, annulation);
+        await ctx.SaveChangesAsync(annulation);
         return etiquette;
     }
 }
