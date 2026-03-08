@@ -11,6 +11,10 @@ services:
       - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=RecipeApp;Uid=recipeapp;Pwd=recipeapp_password;
       - Gemini__ApiKey=${GEMINI_API_KEY}
       - Gemini__Model=gemini-2.5-flash
+      - AWS__BucketName=${AWS_BUCKET_NAME}
+      - AWS__Region=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - ASPNETCORE_ENVIRONMENT=Production
     depends_on:
       db:

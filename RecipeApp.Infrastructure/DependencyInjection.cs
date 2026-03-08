@@ -1,3 +1,5 @@
+using Amazon;
+using Amazon.S3;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -48,7 +50,19 @@ public static class DependencyInjection
 
         // Services applicatifs
         services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<IServiceFichiers, ServiceFichiers>();
+
+        var bucketName = configuration["AWS:BucketName"];
+        if (!string.IsNullOrEmpty(bucketName))
+        {
+            var region = configuration["AWS:Region"] ?? "us-east-1";
+            services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(RegionEndpoint.GetBySystemName(region)));
+            services.AddScoped<IServiceFichiers, ServiceFichiersS3>();
+        }
+        else
+        {
+            services.AddScoped<IServiceFichiers, ServiceFichiers>();
+        }
+
         services.AddHttpClient<IServiceVision, ServiceVision>();
 
         return services;
