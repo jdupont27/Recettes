@@ -14,11 +14,12 @@ set -e
 
 # ── Configuration ──────────────────────────────────────────
 APP_NAME="recetteapp"
+IAM_USER="jdupont27"                            # Utilisateur IAM existant
 REGION="us-east-1"
 BUCKET_NAME="${APP_NAME}-images-$(date +%s)"   # Nom unique garanti
 EC2_KEY_NAME="${APP_NAME}-key"
 INSTANCE_TYPE="t2.micro"                        # Free Tier
-AMI_ID="ami-0c614dee691901e9c"                 # Amazon Linux 2023 us-east-1 (2024)
+AMI_ID=""   # Récupéré automatiquement ci-dessous (Amazon Linux 2023 la plus récente)
 # ───────────────────────────────────────────────────────────
 
 echo ""
@@ -26,6 +27,15 @@ echo "====================================================="
 echo " RecetteApp — Création de l'infrastructure AWS"
 echo "====================================================="
 echo ""
+
+# Récupérer l'AMI Amazon Linux 2023 la plus récente automatiquement
+AMI_ID=$(aws ec2 describe-images \
+    --region "$REGION" \
+    --owners amazon \
+    --filters "Name=name,Values=al2023-ami-*-x86_64" "Name=state,Values=available" \
+    --query 'sort_by(Images, &CreationDate)[-1].ImageId' \
+    --output text)
+echo "AMI détectée : $AMI_ID"
 
 # ── 1. Bucket S3 ──────────────────────────────────────────
 echo "[1/5] Création du bucket S3 : $BUCKET_NAME"
@@ -56,10 +66,8 @@ aws s3api put-bucket-policy --bucket "$BUCKET_NAME" --policy "{
 
 echo "    Bucket créé : https://${BUCKET_NAME}.s3.amazonaws.com"
 
-# ── 2. Utilisateur IAM ────────────────────────────────────
-echo "[2/5] Création de l'utilisateur IAM : ${APP_NAME}-user"
-
-aws iam create-user --user-name "${APP_NAME}-user" 2>/dev/null || echo "    (utilisateur déjà existant)"
+# ── 2. Politique IAM S3 ───────────────────────────────────
+echo "[2/5] Attachement de la politique S3 à l'utilisateur : ${IAM_USER}"
 
 # Politique S3 limitée au bucket
 POLICY_ARN=$(aws iam create-policy \
@@ -73,17 +81,17 @@ POLICY_ARN=$(aws iam create-policy \
       }]
     }" \
     --query 'Policy.Arn' --output text 2>/dev/null \
-    || aws iam list-policies --query "Policies[?PolicyName=='${APP_NAME}-s3-policy'].Arn" --output text)
+    || aws iam list-policies --scope Local --query "Policies[?PolicyName=='${APP_NAME}-s3-policy'].Arn" --output text)
 
 aws iam attach-user-policy \
-    --user-name "${APP_NAME}-user" \
+    --user-name "${IAM_USER}" \
     --policy-arn "$POLICY_ARN"
 
 # Générer les clés d'accès
 echo "[3/5] Génération des clés d'accès IAM"
-KEYS=$(aws iam create-access-key --user-name "${APP_NAME}-user")
-ACCESS_KEY=$(echo "$KEYS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['AccessKey']['AccessKeyId'])")
-SECRET_KEY=$(echo "$KEYS" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['AccessKey']['SecretAccessKey'])")
+KEYS=$(aws iam create-access-key --user-name "${IAM_USER}")
+ACCESS_KEY=$(echo "$KEYS" | grep 'AccessKeyId' | awk -F'"' '{print $4}')
+SECRET_KEY=$(echo "$KEYS" | grep 'SecretAccessKey' | awk -F'"' '{print $4}')
 
 # ── 3. Paire de clés EC2 ──────────────────────────────────
 echo "[4/5] Création de la paire de clés EC2"
@@ -140,10 +148,22 @@ echo "    Instance lancée : $INSTANCE_ID"
 echo "    Attente du démarrage..."
 aws ec2 wait instance-running --instance-ids "$INSTANCE_ID" --region "$REGION"
 
-PUBLIC_IP=$(aws ec2 describe-instances \
-    --instance-ids "$INSTANCE_ID" \
+# ── Elastic IP (IP fixe gratuite) ─────────────────────────
+echo "    Allocation d'une Elastic IP..."
+ALLOCATION_ID=$(aws ec2 allocate-address \
+    --domain vpc \
     --region "$REGION" \
-    --query 'Reservations[0].Instances[0].PublicIpAddress' \
+    --query 'AllocationId' --output text)
+
+aws ec2 associate-address \
+    --instance-id "$INSTANCE_ID" \
+    --allocation-id "$ALLOCATION_ID" \
+    --region "$REGION" > /dev/null
+
+PUBLIC_IP=$(aws ec2 describe-addresses \
+    --allocation-ids "$ALLOCATION_ID" \
+    --region "$REGION" \
+    --query 'Addresses[0].PublicIp' \
     --output text)
 
 # ── Résumé ────────────────────────────────────────────────
@@ -152,7 +172,8 @@ echo "====================================================="
 echo " Infrastructure créée avec succès !"
 echo "====================================================="
 echo ""
-echo " IP de l'instance   : $PUBLIC_IP"
+echo " IP fixe (Elastic)  : $PUBLIC_IP"
+echo " DNS public         : ec2-$(echo $PUBLIC_IP | tr '.' '-').compute-1.amazonaws.com"
 echo " Bucket S3          : $BUCKET_NAME"
 echo " Clé EC2            : ${EC2_KEY_NAME}.pem"
 echo ""
@@ -167,6 +188,7 @@ echo "   cat > .env <<EOF"
 echo "   DB_PASSWORD=choisir-un-mot-de-passe-fort"
 echo "   DB_ROOT_PASSWORD=choisir-un-mot-de-passe-root-fort"
 echo "   GEMINI_API_KEY=votre-cle-gemini"
+echo "   BETA_CODE_INVITATION=votre-code-invitation"
 echo "   AWS_BUCKET_NAME=${BUCKET_NAME}"
 echo "   AWS_REGION=${REGION}"
 echo "   AWS_ACCESS_KEY_ID=${ACCESS_KEY}"
@@ -175,6 +197,7 @@ echo "   EOF"
 echo "   docker-compose up -d --build"
 echo ""
 echo " Application accessible sur : http://${PUBLIC_IP}"
+echo " (ou) http://ec2-$(echo $PUBLIC_IP | tr '.' '-').compute-1.amazonaws.com"
 echo ""
 echo "====================================================="
 echo " IMPORTANT : Sauvegardez ces informations !"
