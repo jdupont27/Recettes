@@ -43,7 +43,7 @@ public class ServiceVision : IServiceVision
               "etapes": [{"numeroEtape": 1, "description": "Décrire l'étape avec tes propres mots..."}]
             }
             Valeurs possibles pour difficulte : Facile, Moyen, Difficile.
-            Valeurs possibles pour unite : Tasse, Grammes, Kilogrammes, Millilitres, Litres, CuillereSoupe, CuillereThe, Unite, AuGout.
+            Valeurs possibles pour unite : Tasse, Grammes, Kilogrammes, Millilitres, Litres, CuillereSoupe, CuillereThe, Livres, Onces, Pincee, Unite, AuGout.
             Si une information n'est pas visible, utilise null pour les chaînes ou une valeur par défaut pour les entiers (nombrePortions=4, temps=0).
             """;
 
@@ -145,6 +145,9 @@ public class ServiceVision : IServiceVision
         "litres" or "l" => UniteIngredient.Litres,
         "cuilleresoup" or "cuilleresoupe" or "c. à soupe" or "tbsp" => UniteIngredient.CuillereSoupe,
         "cuillerethe" or "cuillereté" or "c. à thé" or "tsp" => UniteIngredient.CuillereThe,
+        "livres" or "lbs" or "lb" => UniteIngredient.Livres,
+        "onces" or "oz" => UniteIngredient.Onces,
+        "pincee" or "pincée" or "pinch" => UniteIngredient.Pincee,
         "augout" or "au goût" => UniteIngredient.AuGout,
         _ => UniteIngredient.Unite
     };

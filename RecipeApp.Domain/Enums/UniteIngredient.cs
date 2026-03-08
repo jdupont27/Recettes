@@ -9,6 +9,9 @@ public enum UniteIngredient
     Litres,
     CuillereSoupe,
     CuillereThe,
+    Livres,
+    Onces,
+    Pincee,
     Unite,
     AuGout
 }
