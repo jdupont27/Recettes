@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RecipeApp.Application.DTOs;
 using RecipeApp.Application.Vision.Commands.ExtraireIngredients;
 
@@ -25,6 +26,7 @@ public class VisionController : ControllerBase
     /// Corps : { "imageBase64": "...", "typeMime": "image/jpeg" }
     /// </summary>
     [HttpPost("extraire-ingredients")]
+    [EnableRateLimiting("vision")]
     public async Task<ActionResult<RecetteExtraiteDto>> ExtraireIngredients(
         [FromBody] RequeteExtractionIngredients requete,
         CancellationToken annulation)
@@ -32,10 +34,15 @@ public class VisionController : ControllerBase
         if (string.IsNullOrEmpty(requete.ImageBase64))
             return BadRequest(new { erreur = "L'image est obligatoire." });
 
+        string[] mimeAutorises = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+        var typeMime = requete.TypeMime ?? "image/jpeg";
+        if (!mimeAutorises.Contains(typeMime))
+            return BadRequest(new { erreur = "Type de fichier non autorisé." });
+
         var commande = new ExtraireIngredientsCommand
         {
             ImageBase64 = requete.ImageBase64,
-            TypeMime = requete.TypeMime ?? "image/jpeg"
+            TypeMime = typeMime
         };
 
         var recette = await _mediateur.Send(commande, annulation);

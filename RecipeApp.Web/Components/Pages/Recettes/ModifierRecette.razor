@@ -268,9 +268,9 @@ else
 
             _afficherImportIA = false;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _messageErreur = $"Erreur lors de l'analyse : {ex.Message}";
+            _messageErreur = "L'analyse de la photo a échoué. Veuillez réessayer.";
         }
         finally
         {
@@ -320,9 +320,14 @@ else
             await Mediateur.Send(commande);
             Navigation.NavigateTo($"/recettes/{Id}");
         }
-        catch (Exception ex)
+        catch (FluentValidation.ValidationException ex)
         {
-            _messageErreur = ex.Message;
+            _messageErreur = string.Join(" ", ex.Errors.Select(e => e.ErrorMessage));
+            _sauvegarde = false;
+        }
+        catch (Exception)
+        {
+            _messageErreur = "Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.";
             _sauvegarde = false;
         }
     }

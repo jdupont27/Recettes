@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\RecipeApp.Application\RecipeApp.Application.csproj" />
@@ -16,6 +16,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <UserSecretsId>96a429cf-66a0-4331-b5b6-2a161645f1fd</UserSecretsId>
   </PropertyGroup>
 
 </Project>

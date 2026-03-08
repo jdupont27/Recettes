@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using RecipeApp.Application;
 using RecipeApp.Infrastructure;
 using RecipeApp.Infrastructure.Persistence;
@@ -35,6 +36,21 @@ try
     // Contrôleurs pour l'API Vision
     builder.Services.AddControllers();
 
+    // Rate limiting — max 10 appels/minute par utilisateur sur l'API Vision
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.AddPolicy("vision", context => RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anon",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+        options.RejectionStatusCode = 429;
+    });
+
     // Accès au HttpContext (nécessaire pour CurrentUserService)
     builder.Services.AddHttpContextAccessor();
 
@@ -59,6 +75,18 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    // En-têtes de sécurité HTTP
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+        context.Response.Headers.Append("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+        await next();
+    });
+
+    app.UseRateLimiter();
     app.UseStaticFiles();
     app.UseAntiforgery();
 

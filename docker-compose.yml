@@ -6,38 +6,41 @@ services:
       context: .
       dockerfile: RecipeApp.Web/Dockerfile
     ports:
-      - "8080:8080"
+      - "80:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=RecipeApp;Uid=recipeapp;Pwd=recipeapp_password;
+      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=RecipeApp;Uid=recipeapp;Pwd=${DB_PASSWORD};
       - Gemini__ApiKey=${GEMINI_API_KEY}
       - Gemini__Model=gemini-2.5-flash
       - AWS__BucketName=${AWS_BUCKET_NAME}
       - AWS__Region=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - Beta__CodeInvitation=${BETA_CODE_INVITATION}
       - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_HTTP_PORTS=
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - app_uploads:/app/wwwroot/uploads
+      - app_dataprotection:/root/.aspnet/DataProtection-Keys
     restart: unless-stopped
 
   db:
     image: mysql:8
     environment:
-      MYSQL_ROOT_PASSWORD: root_password_secret
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: RecipeApp
       MYSQL_USER: recipeapp
-      MYSQL_PASSWORD: recipeapp_password
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     # Port non exposé sur l'hôte — l'app et phpMyAdmin y accèdent via le réseau Docker interne
     # Décommenter la ligne ci-dessous si vous avez besoin d'accès direct depuis un client SQL local
     # ports:
-    #   - "3307:3306"
+    #   - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "recipeapp", "-precipeapp_password"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "recipeapp", "-p${DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -45,12 +48,13 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:latest
+    profiles: ["dev"]          # Ne démarre PAS avec docker-compose up (seulement avec --profile dev)
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: root_password_secret
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     depends_on:
       - db
     restart: unless-stopped
@@ -58,3 +62,4 @@ services:
 volumes:
   mysql_data:
   app_uploads:
+  app_dataprotection:

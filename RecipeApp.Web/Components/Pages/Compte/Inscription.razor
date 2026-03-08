@@ -1,9 +1,11 @@
 @page "/compte/inscription"
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Configuration
 @using RecipeApp.Infrastructure.Identity
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 
 <PageTitle>Inscription</PageTitle>
 
@@ -52,6 +54,15 @@
                         <ValidationMessage For="() => Modele!.Confirmation" />
                     </div>
 
+                    @if (!string.IsNullOrEmpty(Configuration["Beta:CodeInvitation"]))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Code d'invitation</label>
+                            <InputText @bind-Value="Modele!.CodeInvitation" class="form-control" placeholder="Entrez votre code d'invitation" />
+                            <div class="form-text">Ce site est en accès limité. Un code d'invitation est requis.</div>
+                        </div>
+                    }
+
                     <button type="submit" class="btn btn-success w-100">Créer mon compte</button>
                 </EditForm>
 
@@ -75,6 +86,16 @@
     private async Task SInscrire()
     {
         _erreurs.Clear();
+
+        if (!string.IsNullOrEmpty(Configuration["Beta:CodeInvitation"]))
+        {
+            var codeAttendu = Configuration["Beta:CodeInvitation"] ?? "";
+            if (!string.Equals(Modele!.CodeInvitation?.Trim(), codeAttendu, StringComparison.Ordinal))
+            {
+                _erreurs.Add("Code d'invitation invalide.");
+                return;
+            }
+        }
 
         if (Modele!.MotDePasse != Modele.Confirmation)
         {
@@ -118,5 +139,7 @@
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "La confirmation est obligatoire.")]
         public string Confirmation { get; set; } = string.Empty;
+
+        public string? CodeInvitation { get; set; }
     }
 }
