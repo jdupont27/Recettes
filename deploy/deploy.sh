@@ -1,28 +1,43 @@
 #!/bin/bash
 # ============================================================
-# deploy.sh — Mise à jour et redéploiement de l'application
-# À exécuter depuis /opt/recetteapp sur l'instance EC2 pour
-# appliquer les nouvelles modifications du dépôt git.
+# deploy.sh — Mise à jour rapide de l'app (après le 1er déploiement)
 #
-# Utilisation :
-#   cd /opt/recetteapp
-#   ./deploy/deploy.sh
+# Utilisation depuis votre poste local :
+#   bash deploy/deploy.sh --ip 54.89.53.91 --key recetteapp-key.pem
+#
+# Ou directement sur le serveur :
+#   cd /opt/recetteapp && bash deploy/deploy.sh
 # ============================================================
 set -e
 
-APP_DIR="/opt/recetteapp"
-cd "$APP_DIR"
+SERVER_IP=""
+KEY_FILE=""
 
-echo "=== Récupération des dernières modifications ==="
-git pull origin master
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --ip)  SERVER_IP="$2"; shift 2 ;;
+        --key) KEY_FILE="$2";  shift 2 ;;
+        *) echo "Argument inconnu : $1"; exit 1 ;;
+    esac
+done
 
-echo "=== Reconstruction et redémarrage des conteneurs ==="
-docker-compose down
-docker-compose up -d --build
+run() {
+    if [ -n "$SERVER_IP" ]; then
+        ssh -i "$KEY_FILE" -o StrictHostKeyChecking=no "ec2-user@${SERVER_IP}" "$@"
+    else
+        bash -c "$*"
+    fi
+}
 
-echo "=== Nettoyage des images inutilisées ==="
-docker image prune -f
+echo "=== Récupération des modifications ==="
+run "cd /opt/recetteapp && git pull origin master"
+
+echo "=== Redémarrage des conteneurs ==="
+run "cd /opt/recetteapp && docker-compose down && docker-compose up -d --build"
+
+echo "=== Nettoyage ==="
+run "docker image prune -f"
 
 echo ""
 echo "=== Déploiement terminé ! ==="
-docker-compose ps
+run "cd /opt/recetteapp && docker-compose ps"

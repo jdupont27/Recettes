@@ -28,6 +28,22 @@ echo " RecetteApp — Création de l'infrastructure AWS"
 echo "====================================================="
 echo ""
 
+# ── Paramètres de déploiement (demandés une seule fois) ───
+echo "Configuration du déploiement :"
+echo ""
+read -rp "URL du dépôt Git (ex: https://github.com/jdupont27/Recettes.git) : " REPO_URL
+read -rsp "Token GitHub (laisser vide si dépôt public) : " GITHUB_TOKEN; echo
+read -rsp "Mot de passe MySQL (DB_PASSWORD) : " DB_PASSWORD; echo
+read -rsp "Mot de passe root MySQL (DB_ROOT_PASSWORD) : " DB_ROOT_PASSWORD; echo
+read -rsp "Clé API Gemini : " GEMINI_API_KEY; echo
+read -rp "Code d'invitation bêta (laisser vide = inscription ouverte) : " BETA_CODE_INVITATION
+echo ""
+
+# Intégrer le token dans l'URL si fourni
+if [ -n "$GITHUB_TOKEN" ]; then
+    REPO_URL=$(echo "$REPO_URL" | sed "s|https://|https://${GITHUB_TOKEN}@|")
+fi
+
 # Récupérer l'AMI Amazon Linux 2023 la plus récente automatiquement
 AMI_ID=$(aws ec2 describe-images \
     --region "$REGION" \
@@ -166,38 +182,32 @@ PUBLIC_IP=$(aws ec2 describe-addresses \
     --query 'Addresses[0].PublicIp' \
     --output text)
 
-# ── Résumé ────────────────────────────────────────────────
+# ── Résumé infrastructure ─────────────────────────────────
 echo ""
 echo "====================================================="
-echo " Infrastructure créée avec succès !"
+echo " Infrastructure créée — déploiement de l'app..."
+echo "====================================================="
+echo " IP fixe  : $PUBLIC_IP"
+echo " Bucket   : $BUCKET_NAME"
+echo " Clé EC2  : ${EC2_KEY_NAME}.pem"
 echo "====================================================="
 echo ""
-echo " IP fixe (Elastic)  : $PUBLIC_IP"
-echo " DNS public         : ec2-$(echo $PUBLIC_IP | tr '.' '-').compute-1.amazonaws.com"
-echo " Bucket S3          : $BUCKET_NAME"
-echo " Clé EC2            : ${EC2_KEY_NAME}.pem"
-echo ""
-echo " Prochaine étape — connectez-vous et déployez :"
-echo ""
-echo "   ssh -i ${EC2_KEY_NAME}.pem ec2-user@${PUBLIC_IP}"
-echo ""
-echo "   # Sur le serveur :"
-echo "   git clone VOTRE_REPO /opt/recetteapp"
-echo "   cd /opt/recetteapp"
-echo "   cat > .env <<EOF"
-echo "   DB_PASSWORD=choisir-un-mot-de-passe-fort"
-echo "   DB_ROOT_PASSWORD=choisir-un-mot-de-passe-root-fort"
-echo "   GEMINI_API_KEY=votre-cle-gemini"
-echo "   BETA_CODE_INVITATION=votre-code-invitation"
-echo "   AWS_BUCKET_NAME=${BUCKET_NAME}"
-echo "   AWS_REGION=${REGION}"
-echo "   AWS_ACCESS_KEY_ID=${ACCESS_KEY}"
-echo "   AWS_SECRET_ACCESS_KEY=${SECRET_KEY}"
-echo "   EOF"
-echo "   docker-compose up -d --build"
-echo ""
-echo " Application accessible sur : http://${PUBLIC_IP}"
-echo " (ou) http://ec2-$(echo $PUBLIC_IP | tr '.' '-').compute-1.amazonaws.com"
+
+# ── Déploiement automatique sur le serveur ────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$SCRIPT_DIR/setup-ec2.sh" \
+    --ip "$PUBLIC_IP" \
+    --key "${EC2_KEY_NAME}.pem" \
+    --repo "$REPO_URL" \
+    --db-password "$DB_PASSWORD" \
+    --db-root "$DB_ROOT_PASSWORD" \
+    --gemini-key "$GEMINI_API_KEY" \
+    --beta-code "$BETA_CODE_INVITATION" \
+    --bucket "$BUCKET_NAME" \
+    --region "$REGION" \
+    --access-key "$ACCESS_KEY" \
+    --secret-key "$SECRET_KEY"
+
 echo ""
 echo "====================================================="
 echo " IMPORTANT : Sauvegardez ces informations !"
