@@ -69,12 +69,10 @@ try
     // Middleware global d'erreurs
     app.UseMiddleware<GestionErreurs>();
 
-    if (!app.Environment.IsDevelopment())
+    if (app.Environment.IsDevelopment())
     {
-        app.UseHsts();
+        app.UseHttpsRedirection();
     }
-
-    app.UseHttpsRedirection();
 
     // En-têtes de sécurité HTTP
     app.Use(async (context, next) =>
