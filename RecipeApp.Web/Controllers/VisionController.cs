@@ -6,7 +6,7 @@ using RecipeApp.Application.Vision.Commands.ExtraireIngredients;
 
 namespace RecipeApp.Web.Controllers;
 
-/// <summary>API d'extraction d'ingrédients par photo via Anthropic Vision.</summary>
+/// <summary>API d'extraction de recette par photo via Gemini Vision.</summary>
 [ApiController]
 [Route("api/vision")]
 [Authorize]
@@ -20,12 +20,12 @@ public class VisionController : ControllerBase
     }
 
     /// <summary>
-    /// Extrait les ingrédients depuis une image en base64.
+    /// Extrait la recette complète depuis une image en base64.
     /// POST /api/vision/extraire-ingredients
     /// Corps : { "imageBase64": "...", "typeMime": "image/jpeg" }
     /// </summary>
     [HttpPost("extraire-ingredients")]
-    public async Task<ActionResult<List<IngredientDto>>> ExtraireIngredients(
+    public async Task<ActionResult<RecetteExtraiteDto>> ExtraireIngredients(
         [FromBody] RequeteExtractionIngredients requete,
         CancellationToken annulation)
     {
@@ -38,8 +38,8 @@ public class VisionController : ControllerBase
             TypeMime = requete.TypeMime ?? "image/jpeg"
         };
 
-        var ingredients = await _mediateur.Send(commande, annulation);
-        return Ok(ingredients);
+        var recette = await _mediateur.Send(commande, annulation);
+        return Ok(recette);
     }
 }
 

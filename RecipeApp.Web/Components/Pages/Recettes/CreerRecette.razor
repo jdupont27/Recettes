@@ -18,6 +18,27 @@
 
 <div class="row">
     <div class="col-lg-8">
+        <!-- Importer par IA -->
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Importer une recette par photo (IA)</h5>
+                <button class="btn btn-sm btn-outline-light" @onclick="() => _afficherImportIA = !_afficherImportIA">
+                    @(_afficherImportIA ? "Masquer" : "Ouvrir")
+                </button>
+            </div>
+            @if (_afficherImportIA)
+            {
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Photographiez une recette imprimée. Gemini remplira automatiquement le titre, la description, les temps, les ingrédients et les étapes.</p>
+                    <UploadPhoto OnPhotoChoisie="ExtraireRecette" LibelleBtn="Analyser la recette" />
+                    @if (_extractionEnCours)
+                    {
+                        <div class="mt-2"><span class="spinner-border spinner-border-sm me-2"></span> Analyse en cours...</div>
+                    }
+                </div>
+            }
+        </div>
+
         <!-- Informations générales -->
         <div class="card mb-4">
             <div class="card-header"><h5 class="mb-0">Informations générales</h5></div>
@@ -84,26 +105,8 @@
 
         <!-- Ingrédients -->
         <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Ingrédients</h5>
-                @* Bouton masqué — sera activé une fois la clé API Anthropic configurée *@
-                <button class="btn btn-sm btn-outline-primary" style="display:none"
-                        @onclick="() => _afficherUploadIngredients = !_afficherUploadIngredients">
-                    Importer par photo
-                </button>
-            </div>
+            <div class="card-header"><h5 class="mb-0">Ingrédients</h5></div>
             <div class="card-body">
-                @if (_afficherUploadIngredients)
-                {
-                    <div class="border rounded p-3 mb-3 bg-light">
-                        <p class="small text-muted">Photographiez votre liste d'ingrédients ou la recette imprimée.</p>
-                        <UploadPhoto OnPhotoChoisie="ExtraireIngredients" LibelleBtn="Analyser la photo" />
-                        @if (_extractionEnCours)
-                        {
-                            <div class="mt-2"><span class="spinner-border spinner-border-sm me-2"></span> Analyse en cours...</div>
-                        }
-                    </div>
-                }
                 <FormulaireIngredients @bind-Ingredients="_ingredients" />
             </div>
         </div>
@@ -172,7 +175,7 @@
     private Visibilite _visibilite = Visibilite.Publique;
     private string? _imageBase64;
     private string? _imageTypeMime;
-    private bool _afficherUploadIngredients;
+    private bool _afficherImportIA;
     private bool _extractionEnCours;
     private bool _sauvegarde;
     private string? _messageErreur;
@@ -210,29 +213,34 @@
         _imageTypeMime = photo.TypeMime;
     }
 
-    private async Task ExtraireIngredients((string Base64, string TypeMime) photo)
+    private async Task ExtraireRecette((string Base64, string TypeMime) photo)
     {
         _extractionEnCours = true;
 
         try
         {
-            var extraits = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireIngredients.ExtraireIngredientsCommand
+            var extraite = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireIngredients.ExtraireIngredientsCommand
             {
                 ImageBase64 = photo.Base64,
                 TypeMime = photo.TypeMime
             });
 
-            foreach (var ing in extraits)
-            {
-                ing.Ordre = _ingredients.Count + 1;
-                _ingredients.Add(ing);
-            }
+            if (!string.IsNullOrEmpty(extraite.Titre)) _titre = extraite.Titre;
+            if (!string.IsNullOrEmpty(extraite.Description)) _description = extraite.Description;
+            if (extraite.TempsPreparation > 0) _tempsPrep = extraite.TempsPreparation;
+            if (extraite.TempsCuisson > 0) _tempsCuisson = extraite.TempsCuisson;
+            if (extraite.NombrePortions > 0) _portions = extraite.NombrePortions;
+            if (!string.IsNullOrEmpty(extraite.TypeCuisine)) _typeCuisine = extraite.TypeCuisine;
+            if (!string.IsNullOrEmpty(extraite.Difficulte) && Enum.TryParse<Difficulte>(extraite.Difficulte, out var diff))
+                _difficulte = diff;
+            if (extraite.Ingredients.Count > 0) _ingredients = extraite.Ingredients;
+            if (extraite.Etapes.Count > 0) _etapes = extraite.Etapes;
 
-            _afficherUploadIngredients = false;
+            _afficherImportIA = false;
         }
         catch (Exception ex)
         {
-            _messageErreur = $"Erreur lors de l'extraction : {ex.Message}";
+            _messageErreur = $"Erreur lors de l'analyse : {ex.Message}";
         }
         finally
         {

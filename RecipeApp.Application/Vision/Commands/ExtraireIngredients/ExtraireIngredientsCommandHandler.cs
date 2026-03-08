@@ -4,7 +4,7 @@ using RecipeApp.Application.Interfaces;
 
 namespace RecipeApp.Application.Vision.Commands.ExtraireIngredients;
 
-public class ExtraireIngredientsCommandHandler : IRequestHandler<ExtraireIngredientsCommand, List<IngredientDto>>
+public class ExtraireIngredientsCommandHandler : IRequestHandler<ExtraireIngredientsCommand, RecetteExtraiteDto>
 {
     private readonly IServiceVision _serviceVision;
 
@@ -13,8 +13,8 @@ public class ExtraireIngredientsCommandHandler : IRequestHandler<ExtraireIngredi
         _serviceVision = serviceVision;
     }
 
-    public async Task<List<IngredientDto>> Handle(ExtraireIngredientsCommand commande, CancellationToken annulation)
+    public async Task<RecetteExtraiteDto> Handle(ExtraireIngredientsCommand commande, CancellationToken annulation)
     {
-        return await _serviceVision.ExtraireIngredientsAsync(commande.ImageBase64, commande.TypeMime, annulation);
+        return await _serviceVision.ExtraireRecetteAsync(commande.ImageBase64, commande.TypeMime, annulation);
     }
 }
