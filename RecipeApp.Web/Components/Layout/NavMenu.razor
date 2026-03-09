@@ -33,16 +33,16 @@
                                 @context.User.Identity?.Name
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="/compte/deconnexion">Déconnexion</a></li>
+                                <li><a class="dropdown-item" href="/compte/deconnexion" onclick="window.location.href='/compte/deconnexion'; return false;">Déconnexion</a></li>
                             </ul>
                         </li>
                     </Authorized>
                     <NotAuthorized>
                         <li class="nav-item">
-                            <NavLink class="nav-link" href="/compte/connexion">Connexion</NavLink>
+                            <a class="nav-link" href="/compte/connexion" onclick="window.location.href='/compte/connexion'; return false;">Connexion</a>
                         </li>
                         <li class="nav-item">
-                            <NavLink class="nav-link" href="/compte/inscription">Inscription</NavLink>
+                            <a class="nav-link" href="/compte/inscription" onclick="window.location.href='/compte/inscription'; return false;">Inscription</a>
                         </li>
                     </NotAuthorized>
                 </AuthorizeView>

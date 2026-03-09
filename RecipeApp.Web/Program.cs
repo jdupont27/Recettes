@@ -1,6 +1,8 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Identity;
 using RecipeApp.Application;
 using RecipeApp.Infrastructure;
+using RecipeApp.Infrastructure.Identity;
 using RecipeApp.Infrastructure.Persistence;
 using RecipeApp.Web.Components;
 using RecipeApp.Web.Middleware;
@@ -69,11 +71,6 @@ try
     // Middleware global d'erreurs
     app.UseMiddleware<GestionErreurs>();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseHttpsRedirection();
-    }
-
     // En-têtes de sécurité HTTP
     app.Use(async (context, next) =>
     {
@@ -91,6 +88,13 @@ try
     // Ordre important : Authentication avant Authorization
     app.UseAuthentication();
     app.UseAuthorization();
+
+    // Déconnexion via GET — s'exécute hors du pipeline Blazor, fonctionne dans tous les modes
+    app.MapGet("/compte/deconnexion", async (SignInManager<ApplicationUser> signInManager, HttpContext ctx) =>
+    {
+        await signInManager.SignOutAsync();
+        return Results.Redirect("/");
+    }).ExcludeFromDescription();
 
     // Endpoints API REST
     app.MapControllers();
