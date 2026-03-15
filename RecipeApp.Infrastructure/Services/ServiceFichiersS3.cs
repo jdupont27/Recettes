@@ -40,8 +40,7 @@ public class ServiceFichiersS3 : IServiceFichiers
             BucketName = _bucketName,
             Key = cle,
             InputStream = flux,
-            ContentType = typeMime,
-            CannedACL = S3CannedACL.PublicRead
+            ContentType = typeMime
         };
 
         await _s3.PutObjectAsync(requete, annulation);
