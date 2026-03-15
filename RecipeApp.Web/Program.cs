@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using RecipeApp.Application;
 using RecipeApp.Infrastructure;
 using RecipeApp.Infrastructure.Persistence;
@@ -15,8 +16,18 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Serilog : lecture depuis appsettings + écriture console et fichier
-    builder.Host.UseSerilog((contexte, services, config) => config
+	builder.Services.Configure<ForwardedHeadersOptions>(options =>
+	{
+		options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+		// On limite les réseaux autorisés (ici on autorise tout car App Runner gère la sécurité en amont)
+		// Mais on utilise une syntaxe qui évite le message "Obsolete" ou "Warning"
+		options.KnownNetworks.Clear();
+		options.KnownProxies.Clear();
+	});
+
+	// Serilog : lecture depuis appsettings + écriture console et fichier
+	builder.Host.UseSerilog((contexte, services, config) => config
         .ReadFrom.Configuration(contexte.Configuration)
         .ReadFrom.Services(services)
         .WriteTo.Console()
@@ -65,9 +76,10 @@ try
     });
 
     var app = builder.Build();
+	app.UseForwardedHeaders();
 
-    // Middleware global d'erreurs
-    app.UseMiddleware<GestionErreurs>();
+	// Middleware global d'erreurs
+	app.UseMiddleware<GestionErreurs>();
 
     if (app.Environment.IsDevelopment())
     {
