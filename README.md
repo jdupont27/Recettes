@@ -27,3 +27,18 @@ et les étapes de préparation.
 | **Entity Framework Core** | Mapping de données (Code First) |
 | **MySQL** | Base de données relationnelle |
 | **Docker** | Containerisation et portabilité |
+
+
+## 🗺️ Roadmap
+
+Ce projet est un prototype fonctionnel. Les améliorations prévues incluent :
+
+- [ ] **Tests unitaires** — Ajout d'un projet xUnit couvrant les validators, 
+      handlers CQRS et la logique de permissions
+- [ ] **Pattern Result<T>** — Remplacement des exceptions métier par un pattern 
+      Either/Result pour un flux d'erreurs plus explicite
+- [ ] **Index de base de données** — Optimisation des requêtes sur `AuteurId` 
+      et `Visibilite` pour la mise à l'échelle
+- [ ] **Health Checks** — Endpoints de monitoring pour la DB, S3 et l'API Gemini
+- [ ] **CI/CD** — Pipeline GitHub Actions pour build, test et déploiement 
+      automatique vers AWS App Runner
