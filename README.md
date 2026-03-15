@@ -6,7 +6,9 @@ Grâce à l'intelligence artificielle, l'application analyse une photo
 et les étapes de préparation.
 
 https://urpr7v9bhw.us-east-2.awsapprunner.com/
+
 Le code d'invitation pour l'inscription 5533881
+
 ---
 
 ## 🚀 Fonctionnalités Clés
