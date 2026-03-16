@@ -22,7 +22,11 @@ public static class DependencyInjection
 
         // Factory pour Blazor Server — chaque opération crée son propre DbContext
         services.AddDbContextFactory<AppDbContext>(options =>
-            options.UseMySql(chaineConnexion, ServerVersion.AutoDetect(chaineConnexion)));
+            options.UseMySql(chaineConnexion, ServerVersion.AutoDetect(chaineConnexion),
+                mysqlOptions => mysqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null)));
 
         // Contexte scoped pour ASP.NET Identity (SignInManager, UserManager)
         services.AddScoped<AppDbContext>(sp =>
