@@ -21,6 +21,7 @@ public static class MappeurRecette
         AuteurId = recette.AuteurId,
         NomAuteur = nomAuteur,
         CheminImage = recette.CheminImage,
+        LienSecret = recette.LienSecret,
         Ingredients = recette.Ingredients
             .OrderBy(i => i.Ordre)
             .Select(i => new IngredientDto

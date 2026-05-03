@@ -5,6 +5,7 @@ namespace RecipeApp.Domain.Interfaces;
 public interface IRecetteRepository
 {
     Task<Recette?> ObtenirParIdAsync(Guid id, CancellationToken annulation = default);
+    Task<Recette?> ObtenirParLienSecretAsync(string lienSecret, CancellationToken annulation = default);
     Task<(IEnumerable<Recette> Recettes, int Total)> RechercherAsync(FiltreRecette filtre, CancellationToken annulation = default);
     Task<Recette> AjouterAsync(Recette recette, CancellationToken annulation = default);
     Task<Recette> ModifierAsync(Recette recette, CancellationToken annulation = default);

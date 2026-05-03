@@ -41,7 +41,7 @@ public class RecetteQueryRepository : IRecetteRepository
             .Include(r => r.RecetteCategories).ThenInclude(rc => rc.Categorie)
             .Include(r => r.RecetteEtiquettes).ThenInclude(re => re.Etiquette)
             .AsNoTracking()
-            .FirstOrDefaultAsync(r => r.LienSecret == lienSecret && r.Visibilite == Visibilite.Partagee, annulation);
+            .FirstOrDefaultAsync(r => r.LienSecret == lienSecret, annulation);
     }
 
     public async Task<(IEnumerable<Recette> Recettes, int Total)> RechercherAsync(FiltreRecette filtre, CancellationToken annulation = default)

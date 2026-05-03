@@ -26,6 +26,16 @@ public class RecetteRepository : IRecetteRepository
             .FirstOrDefaultAsync(r => r.Id == id, annulation);
     }
 
+    public async Task<Recette?> ObtenirParLienSecretAsync(string lienSecret, CancellationToken annulation = default)
+    {
+        return await _contexte.Recettes
+            .Include(r => r.Ingredients.OrderBy(i => i.Ordre))
+            .Include(r => r.Etapes.OrderBy(e => e.NumeroEtape))
+            .Include(r => r.RecetteCategories).ThenInclude(rc => rc.Categorie)
+            .Include(r => r.RecetteEtiquettes).ThenInclude(re => re.Etiquette)
+            .FirstOrDefaultAsync(r => r.LienSecret == lienSecret, annulation);
+    }
+
     public async Task<(IEnumerable<Recette> Recettes, int Total)> RechercherAsync(FiltreRecette filtre, CancellationToken annulation = default)
     {
         var requete = _contexte.Recettes

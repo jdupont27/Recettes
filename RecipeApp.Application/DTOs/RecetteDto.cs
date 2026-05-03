@@ -17,6 +17,7 @@ public class RecetteDto
     public Guid AuteurId { get; set; }
     public string? NomAuteur { get; set; }
     public string? CheminImage { get; set; }
+    public string? LienSecret { get; set; }
     public List<IngredientDto> Ingredients { get; set; } = new();
     public List<EtapeDto> Etapes { get; set; } = new();
     public List<CategorieDto> Categories { get; set; } = new();

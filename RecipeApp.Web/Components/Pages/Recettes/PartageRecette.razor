@@ -1,14 +1,12 @@
-@page "/recettes/{Id:guid}"
+@page "/partage/{Lien}"
 @using MediatR
-@using Microsoft.AspNetCore.Components.Authorization
-@using RecipeApp.Application.Recettes.Commands.GenererLienPartage
+@using RecipeApp.Application.DTOs
+@using RecipeApp.Application.Recettes.Queries.ObtenirRecetteParLien
+@using RecipeApp.Domain.Enums
 @rendermode @(new InteractiveServerRenderMode(prerender: false))
 @inject IMediator Mediateur
-@inject AuthenticationStateProvider AuthState
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
 
-<PageTitle>@(_recette?.Titre ?? "Recette")</PageTitle>
+<PageTitle>@(_recette?.Titre ?? "Recette partagée")</PageTitle>
 
 @if (_chargement)
 {
@@ -16,52 +14,30 @@
 }
 else if (_recette == null)
 {
-    <div class="alert alert-warning">Recette introuvable ou accès non autorisé.</div>
+    <div class="alert alert-warning mt-4">Ce lien de partage est invalide ou a expiré.</div>
 }
 else
 {
     <div class="row">
         <div class="col-lg-8">
-            <!-- En-tête -->
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <h1>@_recette.Titre</h1>
-                    <p class="text-muted">
-                        Par <strong>@(_recette.NomAuteur ?? "Anonyme")</strong> &bull;
-                        @_recette.DateCreation.ToString("dd MMMM yyyy")
-                    </p>
-                </div>
-                @if (_estAuteur)
-                {
-                    <div class="d-flex flex-column gap-2 align-items-end">
-                        <div class="btn-group">
-                            <a href="/recettes/@_recette.Id/modifier" class="btn btn-outline-secondary">Modifier</a>
-                            <button class="btn btn-outline-danger" @onclick="SupprimerRecette">Supprimer</button>
-                        </div>
-                        <button class="btn btn-outline-success btn-sm" @onclick="PartagerRecette">
-                            Copier le lien de partage
-                        </button>
-                        @if (_lienCopie)
-                        {
-                            <small class="text-success">Lien copié !</small>
-                        }
-                    </div>
-                }
+            <div class="mb-3">
+                <h1>@_recette.Titre</h1>
+                <p class="text-muted">
+                    Par <strong>@(_recette.NomAuteur ?? "Anonyme")</strong> &bull;
+                    @_recette.DateCreation.ToString("dd MMMM yyyy")
+                </p>
             </div>
 
-            <!-- Image -->
             @if (!string.IsNullOrEmpty(_recette.CheminImage))
             {
                 <img src="@_recette.CheminImage" class="img-fluid rounded mb-4" alt="@_recette.Titre" style="max-height:400px;width:100%;object-fit:cover;" />
             }
 
-            <!-- Description -->
             @if (!string.IsNullOrEmpty(_recette.Description))
             {
                 <p class="lead mb-4">@_recette.Description</p>
             }
 
-            <!-- Informations -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-md-3 text-center">
                     <div class="bg-light rounded p-3">
@@ -89,7 +65,6 @@ else
                 </div>
             </div>
 
-            <!-- Étiquettes -->
             @if (_recette.Etiquettes.Any())
             {
                 <div class="mb-4">
@@ -100,7 +75,6 @@ else
                 </div>
             }
 
-            <!-- Ingrédients -->
             <h3 class="mt-4">Ingrédients</h3>
             <ul class="list-group mb-4">
                 @foreach (var ingredient in _recette.Ingredients)
@@ -111,7 +85,6 @@ else
                 }
             </ul>
 
-            <!-- Étapes -->
             <h3>Préparation</h3>
             <ol class="list-group list-group-numbered mb-4">
                 @foreach (var etape in _recette.Etapes)
@@ -124,7 +97,6 @@ else
         </div>
 
         <div class="col-lg-4">
-            <!-- Catégories -->
             @if (_recette.Categories.Any())
             {
                 <div class="card mb-3">
@@ -152,43 +124,15 @@ else
 }
 
 @code {
-    [Parameter] public Guid Id { get; set; }
+    [Parameter] public string Lien { get; set; } = string.Empty;
 
     private RecetteDto? _recette;
     private bool _chargement = true;
-    private bool _estAuteur;
-    private bool _lienCopie;
-    private Guid? _utilisateurId;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var claim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(claim?.Value, out var uid))
-            _utilisateurId = uid;
-
-        _recette = await Mediateur.Send(new ObtenirRecetteParIdQuery(Id, _utilisateurId));
-        _estAuteur = _recette?.AuteurId == _utilisateurId;
+        _recette = await Mediateur.Send(new ObtenirRecetteParLienQuery(Lien));
         _chargement = false;
-    }
-
-    private async Task SupprimerRecette()
-    {
-        if (_utilisateurId == null) return;
-        await Mediateur.Send(new SupprimerRecetteCommand(Id, _utilisateurId.Value));
-        Navigation.NavigateTo("/mes-recettes");
-    }
-
-    private async Task PartagerRecette()
-    {
-        if (_utilisateurId == null) return;
-        var lien = await Mediateur.Send(new GenererLienPartageCommand(Id, _utilisateurId.Value));
-        var url = $"{Navigation.BaseUri}partage/{lien}";
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
-        _lienCopie = true;
-        StateHasChanged();
-        await Task.Delay(3000);
-        _lienCopie = false;
     }
 
     private static string FormatQuantite(decimal quantite, UniteIngredient unite)
