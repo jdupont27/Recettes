@@ -31,22 +31,30 @@ else
                         @_recette.DateCreation.ToString("dd MMMM yyyy")
                     </p>
                 </div>
-                @if (_estAuteur)
-                {
-                    <div class="d-flex flex-column gap-2 align-items-end">
-                        <div class="btn-group">
-                            <a href="/recettes/@_recette.Id/modifier" class="btn btn-outline-secondary">Modifier</a>
-                            <button class="btn btn-outline-danger" @onclick="SupprimerRecette">Supprimer</button>
-                        </div>
-                        <button class="btn btn-outline-success btn-sm" @onclick="PartagerRecette">
+                <div class="d-flex flex-column gap-2 align-items-end">
+                    <div class="d-flex gap-2 d-print-none">
+                        <button class="btn btn-outline-secondary" @onclick="ImprimerRecette">
+                            Imprimer
+                        </button>
+                        @if (_estAuteur)
+                        {
+                            <div class="btn-group">
+                                <a href="/recettes/@_recette.Id/modifier" class="btn btn-outline-secondary">Modifier</a>
+                                <button class="btn btn-outline-danger" @onclick="SupprimerRecette">Supprimer</button>
+                            </div>
+                        }
+                    </div>
+                    @if (_estAuteur)
+                    {
+                        <button class="btn btn-outline-success btn-sm d-print-none" @onclick="PartagerRecette">
                             Copier le lien de partage
                         </button>
                         @if (_lienCopie)
                         {
-                            <small class="text-success">Lien copié !</small>
+                            <small class="text-success d-print-none">Lien copié !</small>
                         }
-                    </div>
-                }
+                    }
+                </div>
             </div>
 
             <!-- Image -->
@@ -177,6 +185,11 @@ else
         if (_utilisateurId == null) return;
         await Mediateur.Send(new SupprimerRecetteCommand(Id, _utilisateurId.Value));
         Navigation.NavigateTo("/mes-recettes");
+    }
+
+    private async Task ImprimerRecette()
+    {
+        await JS.InvokeVoidAsync("print");
     }
 
     private async Task PartagerRecette()
