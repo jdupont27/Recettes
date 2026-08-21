@@ -30,7 +30,10 @@ public static class InitialiseurDonnees
             new() { Id = Guid.NewGuid(), Nom = "Salade" },
             new() { Id = Guid.NewGuid(), Nom = "Apéritif" },
             new() { Id = Guid.NewGuid(), Nom = "Boisson" },
-            new() { Id = Guid.NewGuid(), Nom = "Pain & Viennoiserie" }
+            new() { Id = Guid.NewGuid(), Nom = "Pain & Viennoiserie" },
+            new() { Id = Guid.NewGuid(), Nom = "Accompagnement" },
+            new() { Id = Guid.NewGuid(), Nom = "Vinaigrettes et Marinades" },
+            new() { Id = Guid.NewGuid(), Nom = "Légumes" }
         };
 
         await contexte.Categories.AddRangeAsync(categories);

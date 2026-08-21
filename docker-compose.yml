@@ -33,10 +33,10 @@ services:
       MYSQL_DATABASE: RecipeApp
       MYSQL_USER: recipeapp
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    # Port non exposé sur l'hôte — l'app et phpMyAdmin y accèdent via le réseau Docker interne
-    # Décommenter la ligne ci-dessous si vous avez besoin d'accès direct depuis un client SQL local
-    # ports:
-    #   - "3306:3306"
+    # Port exposé sur l'hôte pour un accès direct depuis un client SQL local (DBeaver, etc.)
+    # Remettre en commentaire si vous n'en avez plus besoin.
+    #ports:
+    #  - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
