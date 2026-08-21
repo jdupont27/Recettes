@@ -67,3 +67,9 @@ h1:focus {
 .carte-theme-option:has(input:checked) {
     border-color: var(--bs-success);
 }
+
+.navbar-toggler {
+    --bs-navbar-toggler-font-size: 1rem;
+    --bs-navbar-toggler-padding-y: 0.15rem;
+    --bs-navbar-toggler-padding-x: 0.5rem;
+}
