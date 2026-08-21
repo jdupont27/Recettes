@@ -1,0 +1,99 @@
+/* Thème "Épuré minimaliste" — blanc cassé, accent sauge unique, Space Grotesk + Work Sans */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Work+Sans:wght@400;500&display=swap');
+
+.theme-minimaliste {
+    --tv-bg: oklch(99% 0.003 95);
+    --tv-surface: oklch(99% 0.003 95);
+    --tv-ink: oklch(14% 0 0);
+    --tv-ink-muted: oklch(50% 0 0);
+    --tv-border: oklch(90% 0 0);
+    --tv-accent: oklch(42% 0.11 155);
+    --tv-accent-ink: oklch(99% 0 0);
+    --tv-font-body: 'Work Sans', system-ui, sans-serif;
+    --tv-font-display: 'Space Grotesk', sans-serif;
+
+    background: var(--tv-bg);
+    color: var(--tv-ink);
+    font-family: var(--tv-font-body);
+    min-height: 100vh;
+}
+
+.theme-minimaliste h1, .theme-minimaliste h2, .theme-minimaliste h3,
+.theme-minimaliste .card-title, .theme-minimaliste .navbar-brand {
+    font-family: var(--tv-font-display);
+    font-weight: 500;
+    letter-spacing: -.01em;
+}
+
+.theme-minimaliste a { color: var(--tv-accent); }
+.theme-minimaliste a:hover { color: oklch(32% 0.1 155); }
+.theme-minimaliste .text-muted { color: var(--tv-ink-muted) !important; }
+
+.theme-minimaliste .navbar {
+    background: var(--tv-bg) !important;
+    border-bottom: 1px solid var(--tv-border);
+}
+.theme-minimaliste .navbar-dark .navbar-brand,
+.theme-minimaliste .navbar-dark .nav-link {
+    color: var(--tv-ink) !important;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-size: .85rem;
+}
+.theme-minimaliste .navbar-dark .nav-link:hover { color: var(--tv-accent) !important; }
+
+.theme-minimaliste .card {
+    background: var(--tv-surface);
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--tv-border);
+    box-shadow: none !important;
+}
+
+.theme-minimaliste .btn-success {
+    --bs-btn-hover-bg: oklch(32% 0.1 155);
+    --bs-btn-hover-border-color: oklch(32% 0.1 155);
+    background-color: var(--tv-accent);
+    border-color: var(--tv-accent);
+    border-radius: 2px;
+    color: #fff !important;
+}
+.theme-minimaliste .btn-outline-success {
+    --bs-btn-color: var(--tv-accent);
+    --bs-btn-border-color: var(--tv-accent);
+    --bs-btn-hover-bg: var(--tv-accent);
+    --bs-btn-hover-border-color: var(--tv-accent);
+    color: var(--tv-accent);
+    border-color: var(--tv-accent);
+    border-radius: 2px;
+}
+.theme-minimaliste .btn-outline-secondary {
+    --bs-btn-color: var(--tv-ink);
+    --bs-btn-border-color: var(--tv-border);
+    --bs-btn-hover-bg: var(--tv-ink);
+    --bs-btn-hover-border-color: var(--tv-ink);
+    color: var(--tv-ink);
+    border-color: var(--tv-border);
+    border-radius: 2px;
+}
+.theme-minimaliste .btn-outline-danger { border-radius: 2px; }
+
+.theme-minimaliste .badge.bg-secondary {
+    background: transparent !important;
+    border: none;
+    color: var(--tv-ink-muted) !important;
+    padding-left: 0;
+}
+
+.theme-minimaliste .spinner-border.text-success { color: var(--tv-accent) !important; }
+
+.theme-minimaliste .pagination .page-link { color: var(--tv-ink); border-radius: 0; }
+.theme-minimaliste .pagination .page-item.active .page-link {
+    background-color: var(--tv-ink);
+    border-color: var(--tv-ink);
+}
+
+.theme-minimaliste footer.bg-light {
+    background: var(--tv-bg) !important;
+    border-color: var(--tv-border) !important;
+}

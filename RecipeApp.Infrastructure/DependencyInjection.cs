@@ -43,6 +43,7 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedEmail = false;
         })
         .AddEntityFrameworkStores<AppDbContext>()
+        .AddClaimsPrincipalFactory<ThemeClaimsPrincipalFactory>()
         .AddDefaultTokenProviders();
 
         // Repositories de lecture — contexte frais par méthode (thread-safe Blazor Server)

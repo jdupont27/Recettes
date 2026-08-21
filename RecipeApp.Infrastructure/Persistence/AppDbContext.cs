@@ -24,7 +24,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         base.OnModelCreating(modelBuilder);
 
         // Renommer les tables Identity en français
-        modelBuilder.Entity<ApplicationUser>().ToTable("Utilisateurs");
+        modelBuilder.Entity<ApplicationUser>(entite =>
+        {
+            entite.ToTable("Utilisateurs");
+            entite.Property(u => u.ThemeVisuel).HasConversion<int>();
+        });
         modelBuilder.Entity<IdentityRole<Guid>>().ToTable("Roles");
         modelBuilder.Entity<IdentityUserRole<Guid>>().ToTable("UtilisateursRoles");
         modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("UtilisateursClaims");

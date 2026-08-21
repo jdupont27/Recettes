@@ -1,0 +1,58 @@
+@page "/compte/theme"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using RecipeApp.Domain.Enums
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Thème</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <h1 class="mb-2">Thème visuel</h1>
+        <p class="text-muted mb-4">Choisissez l'apparence de RecetteApp pour votre compte.</p>
+
+        <form method="post" action="/compte/theme/enregistrer">
+            <AntiforgeryToken />
+            <div class="row g-3">
+                @foreach (var option in _options)
+                {
+                    <div class="col-md-6 col-lg-3">
+                        <label class="card h-100 carte-theme-option" style="cursor:pointer;">
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input type="radio" name="theme" value="@((int)option.Valeur)"
+                                           checked="@(_themeActuel == option.Valeur)"
+                                           class="form-check-input" />
+                                    <span class="form-check-label fw-bold">@option.Nom</span>
+                                </div>
+                                <p class="text-muted small mb-0">@option.Description</p>
+                            </div>
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <button type="submit" class="btn btn-success mt-4">Enregistrer</button>
+        </form>
+    </div>
+</div>
+
+@code {
+    private ThemeVisuel _themeActuel;
+
+    private readonly List<(ThemeVisuel Valeur, string Nom, string Description)> _options = new()
+    {
+        (ThemeVisuel.Classique, "Classique", "L'apparence d'origine de RecetteApp."),
+        (ThemeVisuel.ChaleureuxArtisanal, "Chaleureux artisanal", "Crème et terracotta, esprit cahier de recettes fait main."),
+        (ThemeVisuel.EpureMinimaliste, "Épuré minimaliste", "Blanc cassé, un seul accent, léger et rapide à lire."),
+        (ThemeVisuel.EditorialMagazine, "Éditorial magazine", "Fond sombre, gros titres, ton revue de cuisine.")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(RecipeApp.Infrastructure.Identity.ThemeClaimsPrincipalFactory.TypeClaim);
+        _themeActuel = claim != null && Enum.TryParse<ThemeVisuel>(claim.Value, out var valeur)
+            ? valeur
+            : ThemeVisuel.Classique;
+    }
+}

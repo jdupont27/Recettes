@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using RecipeApp.Domain.Enums;
 
 namespace RecipeApp.Infrastructure.Identity;
 
@@ -7,4 +8,5 @@ public class ApplicationUser : IdentityUser<Guid>
 {
     public string DisplayName { get; set; } = string.Empty;
     public DateTime DateInscription { get; set; } = DateTime.UtcNow;
+    public ThemeVisuel ThemeVisuel { get; set; } = ThemeVisuel.Classique;
 }

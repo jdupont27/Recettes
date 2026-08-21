@@ -1,0 +1,93 @@
+/* Thème "Chaleureux artisanal" — crème, terracotta, serif Lora + Karla */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Karla:wght@400;500;600&display=swap');
+
+.theme-artisanal {
+    --tv-bg: oklch(97% 0.015 75);
+    --tv-surface: oklch(99% 0.008 75);
+    --tv-ink: oklch(22% 0.02 50);
+    --tv-ink-muted: oklch(45% 0.02 50);
+    --tv-border: oklch(88% 0.02 70);
+    --tv-accent: oklch(48% 0.17 35);
+    --tv-accent-ink: oklch(98% 0.01 75);
+    --tv-font-body: 'Karla', system-ui, sans-serif;
+    --tv-font-display: 'Lora', serif;
+
+    background: var(--tv-bg);
+    color: var(--tv-ink);
+    font-family: var(--tv-font-body);
+    min-height: 100vh;
+}
+
+.theme-artisanal h1, .theme-artisanal h2, .theme-artisanal h3,
+.theme-artisanal .card-title, .theme-artisanal .navbar-brand {
+    font-family: var(--tv-font-display);
+}
+
+.theme-artisanal a { color: var(--tv-accent); }
+.theme-artisanal a:hover { color: oklch(38% 0.17 35); }
+.theme-artisanal .text-muted { color: var(--tv-ink-muted) !important; }
+
+.theme-artisanal .navbar {
+    background: var(--tv-surface) !important;
+    border-bottom: 1px solid var(--tv-border);
+}
+.theme-artisanal .navbar-dark .navbar-brand,
+.theme-artisanal .navbar-dark .nav-link {
+    color: var(--tv-ink) !important;
+}
+.theme-artisanal .navbar-dark .nav-link:hover {
+    color: var(--tv-accent) !important;
+}
+
+.theme-artisanal .card {
+    background: var(--tv-surface);
+    border-color: var(--tv-border);
+    border-radius: 14px;
+}
+
+.theme-artisanal .btn-success {
+    --bs-btn-hover-bg: oklch(38% 0.17 35);
+    --bs-btn-hover-border-color: oklch(38% 0.17 35);
+    background-color: var(--tv-accent);
+    border-color: var(--tv-accent);
+    color: #fff !important;
+}
+.theme-artisanal .btn-outline-success {
+    --bs-btn-color: var(--tv-accent);
+    --bs-btn-border-color: var(--tv-accent);
+    --bs-btn-hover-bg: var(--tv-accent);
+    --bs-btn-hover-border-color: var(--tv-accent);
+    color: var(--tv-accent);
+    border-color: var(--tv-accent);
+}
+.theme-artisanal .btn-outline-secondary {
+    --bs-btn-color: var(--tv-ink-muted);
+    --bs-btn-border-color: var(--tv-border);
+    --bs-btn-hover-bg: var(--tv-ink);
+    --bs-btn-hover-border-color: var(--tv-ink);
+    color: var(--tv-ink-muted);
+    border-color: var(--tv-border);
+}
+.theme-artisanal .btn-outline-danger {
+    --bs-btn-hover-bg: oklch(52% 0.18 25);
+    --bs-btn-hover-border-color: oklch(52% 0.18 25);
+}
+
+.theme-artisanal .badge.bg-secondary {
+    background: var(--tv-surface) !important;
+    border: 1px solid var(--tv-border);
+    color: var(--tv-ink-muted) !important;
+}
+
+.theme-artisanal .spinner-border.text-success { color: var(--tv-accent) !important; }
+
+.theme-artisanal .pagination .page-link { color: var(--tv-accent); }
+.theme-artisanal .pagination .page-item.active .page-link {
+    background-color: var(--tv-accent);
+    border-color: var(--tv-accent);
+}
+
+.theme-artisanal footer.bg-light {
+    background: var(--tv-surface) !important;
+    border-color: var(--tv-border) !important;
+}
