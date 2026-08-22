@@ -71,6 +71,12 @@ public static class DependencyInjection
 
         services.AddHttpClient<IServiceVision, ServiceVision>();
 
+        // Timeout étendu : upload de la vidéo + attente du traitement (état ACTIVE) + génération peuvent prendre plusieurs minutes
+        services.AddHttpClient<IServiceVisionVideo, ServiceVisionVideo>(client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(5);
+        });
+
         return services;
     }
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using RecipeApp.Application.Exceptions;
 
 namespace RecipeApp.Web.Middleware;
 
@@ -39,6 +40,7 @@ public class GestionErreurs
             ValidationException => StatusCodes.Status400BadRequest,
             UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
             KeyNotFoundException => StatusCodes.Status404NotFound,
+            ExtractionVideoException ev => ev.CodeHttp,
             _ => StatusCodes.Status500InternalServerError
         };
 

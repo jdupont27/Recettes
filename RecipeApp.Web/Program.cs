@@ -59,6 +59,18 @@ try
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
+
+        // Rate limiting — l'extraction vidéo est plus coûteuse et plus lente : max 3 appels/5 minutes par utilisateur
+        options.AddPolicy("vision-video", context => RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anon",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(5),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            }));
+
         options.RejectionStatusCode = 429;
     });
 

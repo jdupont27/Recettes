@@ -49,6 +49,32 @@ else
                 }
             </div>
 
+            <!-- Importer par vidéo (IA) -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Importer une recette par vidéo (IA)</h5>
+                    <button class="btn btn-sm btn-outline-light" @onclick="() => _afficherImportVideoIA = !_afficherImportVideoIA">
+                        @(_afficherImportVideoIA ? "Masquer" : "Ouvrir")
+                    </button>
+                </div>
+                @if (_afficherImportVideoIA)
+                {
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">Filmez la préparation ou collez un lien YouTube. L'analyse peut prendre jusqu'à quelques minutes selon la durée de la vidéo.</p>
+                        <UploadVideo OnVideoChoisie="ExtraireRecetteDeFichier" />
+                        <div class="text-muted small my-2">— ou —</div>
+                        <div class="input-group input-group-sm">
+                            <input type="url" class="form-control" placeholder="https://www.youtube.com/watch?v=..." @bind="_urlYoutube" />
+                            <button class="btn btn-outline-primary" type="button" @onclick="ExtraireRecetteDeYoutube" disabled="@(string.IsNullOrWhiteSpace(_urlYoutube) || _extractionVideoEnCours)">Analyser le lien</button>
+                        </div>
+                        @if (_extractionVideoEnCours)
+                        {
+                            <div class="mt-2"><span class="spinner-border spinner-border-sm me-2"></span> Analyse de la vidéo en cours (cela peut prendre quelques minutes)...</div>
+                        }
+                    </div>
+                }
+            </div>
+
             <div class="card mb-4">
                 <div class="card-header"><h5 class="mb-0">Informations générales</h5></div>
                 <div class="card-body">
@@ -183,9 +209,16 @@ else
     private string? _imageTypeMime;
     private bool _afficherImportIA;
     private bool _extractionEnCours;
+    private bool _afficherImportVideoIA;
+    private bool _extractionVideoEnCours;
+    private string? _urlYoutube;
     private bool _sauvegarde;
     private bool _chargement = true;
     private string? _messageErreur;
+
+    private static readonly System.Text.RegularExpressions.Regex RegexYoutube = new(
+        @"^https?://(www\.)?(youtube\.com/(watch\?v=|shorts/)|youtu\.be/)",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
     private List<IngredientDto> _ingredients = new();
     private List<EtapeDto> _etapes = new();
@@ -254,17 +287,7 @@ else
                 TypeMime = photo.TypeMime
             });
 
-            if (!string.IsNullOrEmpty(extraite.Titre)) _titre = extraite.Titre;
-            if (!string.IsNullOrEmpty(extraite.Description)) _description = extraite.Description;
-            if (extraite.TempsPreparation > 0) _tempsPrep = extraite.TempsPreparation;
-            if (extraite.TempsCuisson > 0) _tempsCuisson = extraite.TempsCuisson;
-            if (extraite.NombrePortions > 0) _portions = extraite.NombrePortions;
-            if (!string.IsNullOrEmpty(extraite.TypeCuisine)) _typeCuisine = extraite.TypeCuisine;
-            if (!string.IsNullOrEmpty(extraite.Difficulte) && Enum.TryParse<Difficulte>(extraite.Difficulte, out var diff))
-                _difficulte = diff;
-            if (extraite.Ingredients.Count > 0) _ingredients = extraite.Ingredients;
-            if (extraite.Etapes.Count > 0) _etapes = extraite.Etapes;
-
+            AppliquerRecetteExtraite(extraite);
             _afficherImportIA = false;
         }
         catch (Exception)
@@ -275,6 +298,98 @@ else
         {
             _extractionEnCours = false;
         }
+    }
+
+    private async Task ExtraireRecetteDeFichier(Microsoft.AspNetCore.Components.Forms.IBrowserFile fichier)
+    {
+        _messageErreur = null;
+        _extractionVideoEnCours = true;
+
+        try
+        {
+            await using var flux = fichier.OpenReadStream(UploadVideo.TailleMaxOctets);
+            var extraite = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireVideo.ExtraireVideoCommand
+            {
+                Flux = flux,
+                TypeMime = fichier.ContentType,
+                TailleOctets = fichier.Size
+            });
+
+            AppliquerRecetteExtraite(extraite);
+            _afficherImportVideoIA = false;
+        }
+        catch (RecipeApp.Application.Exceptions.ExtractionVideoException ex)
+        {
+            _messageErreur = ex.Message;
+        }
+        catch (Exception)
+        {
+            _messageErreur = "L'analyse de la vidéo a échoué. Veuillez réessayer.";
+        }
+        finally
+        {
+            _extractionVideoEnCours = false;
+        }
+    }
+
+    private async Task ExtraireRecetteDeYoutube()
+    {
+        _messageErreur = null;
+
+        if (string.IsNullOrWhiteSpace(_urlYoutube))
+            return;
+
+        if (_urlYoutube.Contains("tiktok.com", StringComparison.OrdinalIgnoreCase) ||
+            _urlYoutube.Contains("instagram.com", StringComparison.OrdinalIgnoreCase))
+        {
+            _messageErreur = "Les liens TikTok et Instagram Reels ne sont pas pris en charge pour l'instant. Téléchargez la vidéo et importez-la comme fichier.";
+            return;
+        }
+
+        if (!RegexYoutube.IsMatch(_urlYoutube))
+        {
+            _messageErreur = "L'URL doit être un lien YouTube valide (youtube.com/watch, youtube.com/shorts ou youtu.be).";
+            return;
+        }
+
+        _extractionVideoEnCours = true;
+
+        try
+        {
+            var extraite = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireVideo.ExtraireVideoCommand
+            {
+                UrlYoutube = _urlYoutube
+            });
+
+            AppliquerRecetteExtraite(extraite);
+            _afficherImportVideoIA = false;
+        }
+        catch (RecipeApp.Application.Exceptions.ExtractionVideoException ex)
+        {
+            _messageErreur = ex.Message;
+        }
+        catch (Exception)
+        {
+            _messageErreur = "L'analyse de la vidéo a échoué. Veuillez réessayer.";
+        }
+        finally
+        {
+            _extractionVideoEnCours = false;
+        }
+    }
+
+    private void AppliquerRecetteExtraite(RecetteExtraiteDto extraite)
+    {
+        if (!string.IsNullOrEmpty(extraite.Titre)) _titre = extraite.Titre;
+        if (!string.IsNullOrEmpty(extraite.Description)) _description = extraite.Description;
+        if (extraite.TempsPreparation > 0) _tempsPrep = extraite.TempsPreparation;
+        if (extraite.TempsCuisson > 0) _tempsCuisson = extraite.TempsCuisson;
+        if (extraite.NombrePortions > 0) _portions = extraite.NombrePortions;
+        if (!string.IsNullOrEmpty(extraite.TypeCuisine)) _typeCuisine = extraite.TypeCuisine;
+        if (!string.IsNullOrEmpty(extraite.Difficulte) && Enum.TryParse<Difficulte>(extraite.Difficulte, out var diff))
+            _difficulte = diff;
+        if (extraite.Ingredients.Count > 0) _ingredients = extraite.Ingredients;
+        if (extraite.Etapes.Count > 0) _etapes = extraite.Etapes;
     }
 
     private void ToggleCategorie(Guid id, bool selectionne)

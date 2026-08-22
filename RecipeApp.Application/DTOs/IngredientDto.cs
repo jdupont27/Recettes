@@ -9,4 +9,7 @@ public class IngredientDto
     public decimal Quantite { get; set; }
     public UniteIngredient Unite { get; set; }
     public int Ordre { get; set; }
+
+    /// <summary>"low" lorsque la quantité n'a pas été énoncée explicitement (extraction vidéo). Null sinon.</summary>
+    public string? Confidence { get; set; }
 }

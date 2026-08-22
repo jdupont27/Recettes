@@ -366,3 +366,4 @@ FodyWeavers.xsd
 /RecipeApp.Web/wwwroot/uploads/recettes
 **/appsettings.Development.json
 /RecipeApp.Web/appsettings.Development.json
+/.claude/settings.local.json

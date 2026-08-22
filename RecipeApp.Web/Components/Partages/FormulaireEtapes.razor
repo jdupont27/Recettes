@@ -13,8 +13,12 @@
              @ondrop="() => DeposerSur(index)"
              style="cursor: grab;">
 
-            <div class="col-auto">
-                <span class="badge bg-success rounded-pill mt-2" style="font-size:1rem;min-width:2rem;">@(index + 1)</span>
+            <div class="col-auto text-center">
+                <span class="badge bg-success rounded-pill mt-2 d-block" style="font-size:1rem;min-width:2rem;">@(index + 1)</span>
+                @if (etape.TimestampSecondes.HasValue)
+                {
+                    <span class="text-muted small" title="Moment dans la vidéo source">@FormatTimestamp(etape.TimestampSecondes.Value)</span>
+                }
             </div>
             <div class="col">
                 <textarea class="form-control form-control-sm"
@@ -82,5 +86,11 @@
     private void NotifierChangement()
     {
         EtapesChanged.InvokeAsync(Etapes);
+    }
+
+    private static string FormatTimestamp(int secondes)
+    {
+        var duree = TimeSpan.FromSeconds(secondes);
+        return duree.TotalHours >= 1 ? duree.ToString(@"h\:mm\:ss") : duree.ToString(@"m\:ss");
     }
 }

@@ -1,0 +1,38 @@
+@using Microsoft.AspNetCore.Components.Forms
+
+<div>
+    <InputFile OnChange="OnFichierChoisi" accept="video/*" class="form-control form-control-sm" />
+    @if (!string.IsNullOrEmpty(_messageErreur))
+    {
+        <div class="text-danger small mt-1">@_messageErreur</div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<IBrowserFile> OnVideoChoisie { get; set; }
+
+    private string? _messageErreur;
+
+    // Taille max : 200 Mo — doit rester alignée avec Gemini:VideoTailleMaxOctets côté serveur
+    public const long TailleMaxOctets = 200 * 1024 * 1024;
+
+    private async Task OnFichierChoisi(InputFileChangeEventArgs e)
+    {
+        _messageErreur = null;
+        var fichier = e.File;
+
+        if (fichier.Size > TailleMaxOctets)
+        {
+            _messageErreur = $"La vidéo ne doit pas dépasser {TailleMaxOctets / 1_000_000} Mo.";
+            return;
+        }
+
+        if (!fichier.ContentType.StartsWith("video/"))
+        {
+            _messageErreur = "Veuillez sélectionner un fichier vidéo.";
+            return;
+        }
+
+        await OnVideoChoisie.InvokeAsync(fichier);
+    }
+}
