@@ -2,7 +2,7 @@
 
 Application web moderne conçue pour numériser et organiser vos recettes. 
 Grâce à l'intelligence artificielle, l'application analyse une photo 
-(manuscrite ou imprimée) ou un vidéo Youtube et extrait automatiquement les ingrédients 
+(manuscrite ou imprimée) ou une vidéo Youtube et extrait automatiquement les ingrédients 
 et les étapes de préparation.
 
 https://urpr7v9bhw.us-east-2.awsapprunner.com/
