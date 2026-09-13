@@ -18,46 +18,58 @@ public static class InitialiseurDonnees
 
     private static async Task InitialiserCategoriesAsync(AppDbContext contexte)
     {
-        if (await contexte.Categories.AnyAsync())
-            return;
-
-        var categories = new List<Categorie>
+        var nomsParDefaut = new[]
         {
-            new() { Id = Guid.NewGuid(), Nom = "Entrée" },
-            new() { Id = Guid.NewGuid(), Nom = "Plat principal" },
-            new() { Id = Guid.NewGuid(), Nom = "Dessert" },
-            new() { Id = Guid.NewGuid(), Nom = "Soupe" },
-            new() { Id = Guid.NewGuid(), Nom = "Salade" },
-            new() { Id = Guid.NewGuid(), Nom = "Apéritif" },
-            new() { Id = Guid.NewGuid(), Nom = "Boisson" },
-            new() { Id = Guid.NewGuid(), Nom = "Pain & Viennoiserie" },
-            new() { Id = Guid.NewGuid(), Nom = "Accompagnement" },
-            new() { Id = Guid.NewGuid(), Nom = "Vinaigrettes et Marinades" },
-            new() { Id = Guid.NewGuid(), Nom = "Légumes" }
+            "Entrée",
+            "Plat principal",
+            "Dessert",
+            "Soupe",
+            "Salade",
+            "Apéritif",
+            "Boisson",
+            "Pain & Viennoiserie",
+            "Accompagnement",
+            "Vinaigrettes et Marinades",
+            "Légumes"
         };
 
-        await contexte.Categories.AddRangeAsync(categories);
+        var nomsExistants = await contexte.Categories.Select(c => c.Nom).ToListAsync();
+        var categoriesManquantes = nomsParDefaut
+            .Where(nom => !nomsExistants.Contains(nom))
+            .Select(nom => new Categorie { Id = Guid.NewGuid(), Nom = nom })
+            .ToList();
+
+        if (categoriesManquantes.Count == 0)
+            return;
+
+        await contexte.Categories.AddRangeAsync(categoriesManquantes);
         await contexte.SaveChangesAsync();
     }
 
     private static async Task InitialiserEtiquettesAsync(AppDbContext contexte)
     {
-        if (await contexte.Etiquettes.AnyAsync())
-            return;
-
-        var etiquettes = new List<Etiquette>
+        var nomsParDefaut = new[]
         {
-            new() { Id = Guid.NewGuid(), Nom = "Végétarien" },
-            new() { Id = Guid.NewGuid(), Nom = "Vegan" },
-            new() { Id = Guid.NewGuid(), Nom = "Sans gluten" },
-            new() { Id = Guid.NewGuid(), Nom = "Sans lactose" },
-            new() { Id = Guid.NewGuid(), Nom = "Épicé" },
-            new() { Id = Guid.NewGuid(), Nom = "Rapide" },
-            new() { Id = Guid.NewGuid(), Nom = "Économique" },
-            new() { Id = Guid.NewGuid(), Nom = "Sans noix" }
+            "Végétarien",
+            "Vegan",
+            "Sans gluten",
+            "Sans lactose",
+            "Épicé",
+            "Rapide",
+            "Économique",
+            "Sans noix"
         };
 
-        await contexte.Etiquettes.AddRangeAsync(etiquettes);
+        var nomsExistants = await contexte.Etiquettes.Select(e => e.Nom).ToListAsync();
+        var etiquettesManquantes = nomsParDefaut
+            .Where(nom => !nomsExistants.Contains(nom))
+            .Select(nom => new Etiquette { Id = Guid.NewGuid(), Nom = nom })
+            .ToList();
+
+        if (etiquettesManquantes.Count == 0)
+            return;
+
+        await contexte.Etiquettes.AddRangeAsync(etiquettesManquantes);
         await contexte.SaveChangesAsync();
     }
 }
