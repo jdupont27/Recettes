@@ -1,0 +1,23 @@
+app = "recetteapp"
+primary_region = "yyz"
+
+[build]
+  dockerfile = "RecipeApp.Web/Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # "suspend" plutôt que "stop" : réveil quasi instantané (état mémoire
+  # conservé) au lieu d'un redémarrage à froid — important pour Blazor
+  # Server dont les connexions actives dépendent d'un WebSocket persistant.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[mounts]]
+  source = "recetteapp_dataprotection"
+  destination = "/root/.aspnet/DataProtection-Keys"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

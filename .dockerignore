@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+.git
+.env
+.env.*
+!.env.example
+*.user
+.vs/
+.vscode/
+fly.toml
+README.md
