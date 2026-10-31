@@ -1,0 +1,115 @@
+@page "/compte/mot-de-passe-oublie"
+@using Microsoft.AspNetCore.Identity
+@using RecipeApp.Application.Interfaces
+@using RecipeApp.Infrastructure.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject IServiceCourriel ServiceCourriel
+@inject NavigationManager Navigation
+@inject ILogger<MotDePasseOublie> Logger
+@inject IConfiguration Configuration
+
+<PageTitle>Mot de passe oublié</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Mot de passe oublié</h2>
+
+                @if (_messageConfirmation is not null)
+                {
+                    <div class="alert alert-success">@_messageConfirmation</div>
+                }
+                else
+                {
+                    <p class="text-muted">Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.</p>
+
+                    <EditForm method="post" Model="Modele" OnValidSubmit="Envoyer" FormName="motDePasseOublie">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Adresse e-mail</label>
+                            <InputText @bind-Value="Modele!.Email" class="form-control" type="email" autocomplete="email" />
+                            <ValidationMessage For="() => Modele!.Email" />
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">Envoyer le lien</button>
+                    </EditForm>
+                }
+
+                <hr />
+                <p class="text-center mb-0">
+                    <a href="/compte/connexion">Retour à la connexion</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private ModeleMotDePasseOublie? Modele { get; set; }
+
+    private string? _messageConfirmation;
+
+    protected override void OnInitialized() => Modele ??= new();
+
+    private async Task Envoyer()
+    {
+        var utilisateur = await UserManager.FindByEmailAsync(Modele!.Email);
+
+        // Toujours le même message, qu'un compte existe ou non — évite de
+        // révéler par ce formulaire quelles adresses sont inscrites.
+        _messageConfirmation = "Si cette adresse correspond à un compte, un lien de réinitialisation vient d'être envoyé.";
+
+        if (utilisateur is not null)
+        {
+            var jeton = await UserManager.GeneratePasswordResetTokenAsync(utilisateur);
+            var jetonEncode = Uri.EscapeDataString(jeton);
+            var lien = $"{Navigation.BaseUri}compte/reinitialiser-mot-de-passe?userId={utilisateur.Id}&jeton={jetonEncode}";
+
+            // Relais manuel temporaire : tant qu'aucun domaine n'est vérifié chez le
+            // fournisseur de courriel, tous les envois atterrissent sur l'adresse de
+            // l'administrateur, qui transfère manuellement à l'utilisateur concerné.
+            // Laisser Email:AdminRelayAddress vide rétablit l'envoi direct normal.
+            var adresseRelais = Configuration["Email:AdminRelayAddress"];
+            var enModeRelais = !string.IsNullOrEmpty(adresseRelais);
+
+            var destinataire = enModeRelais ? adresseRelais! : utilisateur.Email!;
+            var sujet = enModeRelais
+                ? $"[À transférer] Réinitialisation pour {utilisateur.Email}"
+                : "Réinitialisation de votre mot de passe";
+
+            var corps = enModeRelais
+                ? $"""
+                    <p>Demande de réinitialisation pour : <strong>{utilisateur.Email}</strong></p>
+                    <p>Transférez ce lien à cette personne :</p>
+                    <p><a href="{lien}">{lien}</a></p>
+                    """
+                : $"""
+                    <p>Bonjour,</p>
+                    <p>Vous avez demandé la réinitialisation de votre mot de passe RecetteApp.</p>
+                    <p><a href="{lien}">Cliquez ici pour choisir un nouveau mot de passe</a></p>
+                    <p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce courriel.</p>
+                    """;
+
+            try
+            {
+                await ServiceCourriel.EnvoyerAsync(destinataire, sujet, corps);
+            }
+            catch (Exception ex)
+            {
+                // Le message affiché reste générique dans tous les cas — on journalise
+                // l'échec réel pour pouvoir le diagnostiquer côté serveur.
+                Logger.LogError(ex, "Échec de l'envoi du courriel de réinitialisation pour {Email}", utilisateur.Email);
+            }
+        }
+    }
+
+    private class ModeleMotDePasseOublie
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "L'email est obligatoire.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Email invalide.")]
+        public string Email { get; set; } = string.Empty;
+    }
+}

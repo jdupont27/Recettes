@@ -69,6 +69,8 @@ public static class DependencyInjection
             services.AddScoped<IServiceFichiers, ServiceFichiers>();
         }
 
+        services.AddHttpClient<IServiceCourriel, ServiceCourrielResend>();
+
         services.AddHttpClient<IServiceVision, ServiceVision>();
 
         // Timeout étendu : upload de la vidéo + attente du traitement (état ACTIVE) + génération peuvent prendre plusieurs minutes

@@ -17,6 +17,9 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - Beta__CodeInvitation=${BETA_CODE_INVITATION}
+      - Email__ResendApiKey=${EMAIL_RESEND_API_KEY}
+      - Email__FromName=${EMAIL_FROM_NAME:-RecetteApp}
+      - Email__AdminRelayAddress=${EMAIL_ADMIN_RELAY_ADDRESS}
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_HTTP_PORTS=
     depends_on:
