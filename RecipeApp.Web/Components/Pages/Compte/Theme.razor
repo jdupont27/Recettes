@@ -8,7 +8,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-9">
         <h1 class="mb-2">Thème visuel</h1>
-        <p class="text-muted mb-4">Choisissez l'apparence de RecetteApp pour votre compte.</p>
+        <p class="text-muted mb-4">Choisissez l'apparence pour votre compte.</p>
 
         <form method="post" action="/compte/theme/enregistrer">
             <AntiforgeryToken />
@@ -41,7 +41,7 @@
 
     private readonly List<(ThemeVisuel Valeur, string Nom, string Description)> _options = new()
     {
-        (ThemeVisuel.Classique, "Classique", "L'apparence d'origine de RecetteApp."),
+        (ThemeVisuel.Classique, "Classique", "L'apparence d'origine."),
         (ThemeVisuel.ChaleureuxArtisanal, "Chaleureux artisanal", "Crème et terracotta, esprit cahier de recettes fait main."),
         (ThemeVisuel.EpureMinimaliste, "Épuré minimaliste", "Blanc cassé, un seul accent, léger et rapide à lire."),
         (ThemeVisuel.EditorialMagazine, "Éditorial magazine", "Fond sombre, gros titres, ton revue de cuisine.")
