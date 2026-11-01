@@ -1,0 +1,73 @@
+@page "/compte/profil"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Authorization
+@using RecipeApp.Infrastructure.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Mon profil</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">Mon profil</h2>
+
+                @if (_messageConfirmation is not null)
+                {
+                    <div class="alert alert-success">@_messageConfirmation</div>
+                }
+
+                @if (_modele is not null)
+                {
+                    <EditForm Model="_modele" OnValidSubmit="Enregistrer">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label class="form-label">Nom d'affichage</label>
+                            <InputText @bind-Value="_modele.NomAffichage" class="form-control" />
+                            <ValidationMessage For="() => _modele.NomAffichage" />
+                            <div class="form-text">Le nom affiché publiquement comme auteur de vos recettes.</div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Enregistrer</button>
+                    </EditForm>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ModeleProfil? _modele;
+    private string? _messageConfirmation;
+    private Guid _utilisateurId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        Guid.TryParse(claim?.Value, out _utilisateurId);
+
+        var utilisateur = await UserManager.FindByIdAsync(_utilisateurId.ToString());
+        _modele = new ModeleProfil { NomAffichage = utilisateur?.DisplayName ?? string.Empty };
+    }
+
+    private async Task Enregistrer()
+    {
+        var utilisateur = await UserManager.FindByIdAsync(_utilisateurId.ToString());
+        if (utilisateur is not null)
+        {
+            utilisateur.DisplayName = _modele!.NomAffichage;
+            await UserManager.UpdateAsync(utilisateur);
+            _messageConfirmation = "Nom d'affichage mis à jour.";
+        }
+    }
+
+    private class ModeleProfil
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Le nom d'affichage est obligatoire.")]
+        [System.ComponentModel.DataAnnotations.MaxLength(100)]
+        public string NomAffichage { get; set; } = string.Empty;
+    }
+}
