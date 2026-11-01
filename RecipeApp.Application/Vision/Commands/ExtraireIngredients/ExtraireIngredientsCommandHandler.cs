@@ -15,6 +15,6 @@ public class ExtraireIngredientsCommandHandler : IRequestHandler<ExtraireIngredi
 
     public async Task<RecetteExtraiteDto> Handle(ExtraireIngredientsCommand commande, CancellationToken annulation)
     {
-        return await _serviceVision.ExtraireRecetteAsync(commande.ImageBase64, commande.TypeMime, annulation);
+        return await _serviceVision.ExtraireRecetteAsync(commande.Images, annulation);
     }
 }

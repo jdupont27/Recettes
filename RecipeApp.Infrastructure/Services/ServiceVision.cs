@@ -25,10 +25,11 @@ public class ServiceVision : IServiceVision
         _logger = logger;
     }
 
-    public async Task<RecetteExtraiteDto> ExtraireRecetteAsync(string imageBase64, string typeMime, CancellationToken annulation = default)
+    public async Task<RecetteExtraiteDto> ExtraireRecetteAsync(IReadOnlyList<ImageAnalyseeDto> images, CancellationToken annulation = default)
     {
         const string prompt = """
-            Tu es un assistant culinaire. En observant cette image, crée une fiche recette structurée en JSON.
+            Tu es un assistant culinaire. En observant ces images — qui peuvent être plusieurs
+            photos (ex. : pages successives) d'une même recette — crée une fiche recette structurée en JSON.
             Ne reproduis pas mot pour mot un texte existant — formule les étapes avec tes propres mots.
             Retourne UNIQUEMENT un JSON valide (sans balises markdown) avec ce format :
             {
@@ -47,21 +48,17 @@ public class ServiceVision : IServiceVision
             Si une information n'est pas visible, utilise null pour les chaînes ou une valeur par défaut pour les entiers (nombrePortions=4, temps=0).
             """;
 
+        var parties = new List<object>(images.Select(image => new
+        {
+            inlineData = new { mimeType = image.TypeMime, data = image.Base64 }
+        }));
+        parties.Add(new { text = prompt });
+
         var corps = new
         {
             contents = new[]
             {
-                new
-                {
-                    parts = new object[]
-                    {
-                        new
-                        {
-                            inlineData = new { mimeType = typeMime, data = imageBase64 }
-                        },
-                        new { text = prompt }
-                    }
-                }
+                new { parts = parties }
             }
         };
 

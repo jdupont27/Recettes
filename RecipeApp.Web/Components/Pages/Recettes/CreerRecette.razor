@@ -29,8 +29,8 @@
             @if (_afficherImportIA)
             {
                 <div class="card-body">
-                    <p class="text-muted small mb-3">Photographiez une recette imprimée. Gemini remplira automatiquement le titre, la description, les temps, les ingrédients et les étapes.</p>
-                    <UploadPhoto OnPhotoChoisie="ExtraireRecette" LibelleBtn="Analyser la recette" />
+                    <p class="text-muted small mb-3">Photographiez une recette imprimée (plusieurs photos si elle tient sur plusieurs pages). Gemini remplira automatiquement le titre, la description, les temps, les ingrédients et les étapes.</p>
+                    <UploadPhoto Multiple="true" OnPhotosChoisies="ExtraireRecette" LibelleBtn="Analyser la recette" />
                     @if (_extractionEnCours)
                     {
                         <div class="mt-2"><span class="spinner-border spinner-border-sm me-2"></span> Analyse en cours...</div>
@@ -245,7 +245,7 @@
         _imageTypeMime = photo.TypeMime;
     }
 
-    private async Task ExtraireRecette((string Base64, string TypeMime) photo)
+    private async Task ExtraireRecette(List<(string Base64, string TypeMime)> photos)
     {
         _extractionEnCours = true;
 
@@ -253,8 +253,7 @@
         {
             var extraite = await Mediateur.Send(new RecipeApp.Application.Vision.Commands.ExtraireIngredients.ExtraireIngredientsCommand
             {
-                ImageBase64 = photo.Base64,
-                TypeMime = photo.TypeMime
+                Images = photos.Select(p => new ImageAnalyseeDto { Base64 = p.Base64, TypeMime = p.TypeMime }).ToList()
             });
 
             AppliquerRecetteExtraite(extraite);

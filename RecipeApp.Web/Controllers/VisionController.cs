@@ -29,9 +29,10 @@ public class VisionController : ControllerBase
     }
 
     /// <summary>
-    /// Extrait la recette complète depuis une image en base64.
+    /// Extrait la recette complète depuis une ou plusieurs images en base64 (ex. : plusieurs
+    /// pages d'une même recette imprimée).
     /// POST /api/vision/extraire-ingredients
-    /// Corps : { "imageBase64": "...", "typeMime": "image/jpeg" }
+    /// Corps : { "images": [{ "imageBase64": "...", "typeMime": "image/jpeg" }] }
     /// </summary>
     [HttpPost("extraire-ingredients")]
     [EnableRateLimiting("vision")]
@@ -39,19 +40,25 @@ public class VisionController : ControllerBase
         [FromBody] RequeteExtractionIngredients requete,
         CancellationToken annulation)
     {
-        if (string.IsNullOrEmpty(requete.ImageBase64))
-            return BadRequest(new { erreur = "L'image est obligatoire." });
+        if (requete.Images == null || requete.Images.Count == 0)
+            return BadRequest(new { erreur = "Au moins une image est obligatoire." });
 
         string[] mimeAutorises = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        var typeMime = requete.TypeMime ?? "image/jpeg";
-        if (!mimeAutorises.Contains(typeMime))
-            return BadRequest(new { erreur = "Type de fichier non autorisé." });
+        var images = new List<ImageAnalyseeDto>();
 
-        var commande = new ExtraireIngredientsCommand
+        foreach (var image in requete.Images)
         {
-            ImageBase64 = requete.ImageBase64,
-            TypeMime = typeMime
-        };
+            if (string.IsNullOrEmpty(image.ImageBase64))
+                return BadRequest(new { erreur = "L'image est obligatoire." });
+
+            var typeMime = image.TypeMime ?? "image/jpeg";
+            if (!mimeAutorises.Contains(typeMime))
+                return BadRequest(new { erreur = "Type de fichier non autorisé." });
+
+            images.Add(new ImageAnalyseeDto { Base64 = image.ImageBase64, TypeMime = typeMime });
+        }
+
+        var commande = new ExtraireIngredientsCommand { Images = images };
 
         var recette = await _mediateur.Send(commande, annulation);
         return Ok(recette);
@@ -113,4 +120,6 @@ public class VisionController : ControllerBase
     }
 }
 
-public record RequeteExtractionIngredients(string? ImageBase64, string? TypeMime);
+public record RequeteExtractionIngredients(List<RequeteImage>? Images);
+
+public record RequeteImage(string? ImageBase64, string? TypeMime);

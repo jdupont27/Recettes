@@ -4,5 +4,5 @@ namespace RecipeApp.Application.Interfaces;
 
 public interface IServiceVision
 {
-    Task<RecetteExtraiteDto> ExtraireRecetteAsync(string imageBase64, string typeMime, CancellationToken annulation = default);
+    Task<RecetteExtraiteDto> ExtraireRecetteAsync(IReadOnlyList<ImageAnalyseeDto> images, CancellationToken annulation = default);
 }
