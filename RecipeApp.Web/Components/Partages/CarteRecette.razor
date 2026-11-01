@@ -43,17 +43,24 @@
             {
                 <div class="d-flex gap-2 mt-2">
                     <a href="/recettes/@Recette.Id/modifier" class="btn btn-sm btn-outline-secondary flex-fill">Modifier</a>
-                    <button class="btn btn-sm btn-outline-danger flex-fill" @onclick="() => OnSuppression.InvokeAsync()">Supprimer</button>
+                    <button class="btn btn-sm btn-outline-danger flex-fill" @onclick="() => _modaleSuppression?.Ouvrir()">Supprimer</button>
                 </div>
             }
         </div>
     </div>
 </div>
 
+<ModaleConfirmation @ref="_modaleSuppression"
+                     Titre="Supprimer la recette"
+                     Message="@($"Êtes-vous certain de vouloir supprimer « {Recette.Titre} » ? Cette action est irréversible.")"
+                     OnConfirme="() => OnSuppression.InvokeAsync()" />
+
 @code {
     [Parameter, EditorRequired] public RecetteDto Recette { get; set; } = null!;
     [Parameter] public bool AfficherActions { get; set; }
     [Parameter] public EventCallback OnSuppression { get; set; }
+
+    private ModaleConfirmation? _modaleSuppression;
 
     private static string BadgeDifficulte(Difficulte d) => d switch
     {

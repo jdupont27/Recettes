@@ -40,7 +40,7 @@ else
                         {
                             <div class="btn-group">
                                 <a href="/recettes/@_recette.Id/modifier" class="btn btn-outline-secondary">Modifier</a>
-                                <button class="btn btn-outline-danger" @onclick="SupprimerRecette">Supprimer</button>
+                                <button class="btn btn-outline-danger" @onclick="() => _modaleSuppression?.Ouvrir()">Supprimer</button>
                             </div>
                         }
                     </div>
@@ -157,6 +157,11 @@ else
             }
         </div>
     </div>
+
+    <ModaleConfirmation @ref="_modaleSuppression"
+                         Titre="Supprimer la recette"
+                         Message="@($"Êtes-vous certain de vouloir supprimer « {_recette.Titre} » ? Cette action est irréversible.")"
+                         OnConfirme="SupprimerRecette" />
 }
 
 @code {
@@ -167,6 +172,7 @@ else
     private bool _estAuteur;
     private bool _lienCopie;
     private Guid? _utilisateurId;
+    private ModaleConfirmation? _modaleSuppression;
 
     protected override async Task OnInitializedAsync()
     {
