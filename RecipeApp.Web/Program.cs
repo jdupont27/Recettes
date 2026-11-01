@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
 using RecipeApp.Application;
@@ -6,6 +7,13 @@ using RecipeApp.Infrastructure.Persistence;
 using RecipeApp.Web.Components;
 using RecipeApp.Web.Middleware;
 using Serilog;
+
+// Application entièrement en français — fixe la culture par défaut de tous les threads
+// (y compris ceux des circuits Blazor Server) pour que les dates s'affichent en français
+// peu importe la locale du conteneur/serveur.
+var cultureParDefaut = new CultureInfo("fr-CA");
+CultureInfo.DefaultThreadCurrentCulture = cultureParDefaut;
+CultureInfo.DefaultThreadCurrentUICulture = cultureParDefaut;
 
 // Configuration initiale de Serilog (bootstrap logger)
 Log.Logger = new LoggerConfiguration()
