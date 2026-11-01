@@ -1,6 +1,7 @@
 using MediatR;
 using RecipeApp.Application.Common.Mappages;
 using RecipeApp.Application.DTOs;
+using RecipeApp.Application.Interfaces;
 using RecipeApp.Domain.Enums;
 using RecipeApp.Domain.Interfaces;
 
@@ -9,10 +10,12 @@ namespace RecipeApp.Application.Recettes.Queries.ObtenirRecetteParId;
 public class ObtenirRecetteParIdQueryHandler : IRequestHandler<ObtenirRecetteParIdQuery, RecetteDto?>
 {
     private readonly IRecetteRepository _recetteRepository;
+    private readonly IServiceUtilisateurs _serviceUtilisateurs;
 
-    public ObtenirRecetteParIdQueryHandler(IRecetteRepository recetteRepository)
+    public ObtenirRecetteParIdQueryHandler(IRecetteRepository recetteRepository, IServiceUtilisateurs serviceUtilisateurs)
     {
         _recetteRepository = recetteRepository;
+        _serviceUtilisateurs = serviceUtilisateurs;
     }
 
     public async Task<RecetteDto?> Handle(ObtenirRecetteParIdQuery requete, CancellationToken annulation)
@@ -31,6 +34,10 @@ public class ObtenirRecetteParIdQueryHandler : IRequestHandler<ObtenirRecettePar
             _ => false
         };
 
-        return peutLire ? MappeurRecette.VersDto(recette) : null;
+        if (!peutLire)
+            return null;
+
+        var nomAuteur = await _serviceUtilisateurs.ObtenirNomAsync(recette.AuteurId, annulation);
+        return MappeurRecette.VersDto(recette, nomAuteur);
     }
 }
