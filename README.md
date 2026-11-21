@@ -18,7 +18,7 @@ L'inscription nécessite un code d'invitation (mode bêta) — voir `.env.exampl
 * **Stockage Cloud :** Hébergement des images sur **Amazon S3**.
 * **Comptes & sécurité :** Authentification ASP.NET Identity, réinitialisation de mot de passe par courriel.
 * **Déploiement Moderne :** Containerisation avec **Docker** et hébergement sur **Fly.io**.
-* **Base de données :** Persistance des données sur **MySQL** (via Aiven).
+* **Base de données :** Persistance des données sur **PostgreSQL** (via Aiven).
 
 ---
 
@@ -44,7 +44,7 @@ rapidement au besoin (même base de données Aiven et même bucket S3).
 | **Google Gemini API** | Intelligence Artificielle (analyse d'images et de vidéos) |
 | **Resend** | Envoi de courriels (réinitialisation de mot de passe) |
 | **Entity Framework Core** | Mapping de données (Code First) |
-| **MySQL** | Base de données relationnelle (Aiven) |
+| **PostgreSQL** | Base de données relationnelle (Aiven) |
 | **Docker** | Containerisation et portabilité |
 
 

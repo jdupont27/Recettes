@@ -17,16 +17,17 @@ public static class DependencyInjection
 {
     public static IServiceCollection AjouterCoucheInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var chaineConnexion = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Chaîne de connexion 'DefaultConnection' manquante.");
+        var chaineConnexion = ChaineConnexionPostgres.Normaliser(
+            configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Chaîne de connexion 'DefaultConnection' manquante."));
 
         // Factory pour Blazor Server — chaque opération crée son propre DbContext
         services.AddDbContextFactory<AppDbContext>(options =>
-            options.UseMySql(chaineConnexion, ServerVersion.AutoDetect(chaineConnexion),
-                mysqlOptions => mysqlOptions.EnableRetryOnFailure(
+            options.UseNpgsql(chaineConnexion,
+                npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 5,
                     maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null)));
+                    errorCodesToAdd: null)));
 
         // Contexte scoped pour ASP.NET Identity (SignInManager, UserManager)
         services.AddScoped<AppDbContext>(sp =>
