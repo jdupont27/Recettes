@@ -8,7 +8,7 @@ services:
     ports:
       - "80:8080"
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Port=3306;Database=RecipeApp;Uid=recipeapp;Pwd=${DB_PASSWORD};
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=RecipeApp;Username=recipeapp;Password=${DB_PASSWORD};
       - Gemini__ApiKey=${GEMINI_API_KEY}
       - Gemini__Model=gemini-2.5-flash
       - Gemini__VideoModel=gemini-3.5-flash-lite
@@ -31,39 +31,36 @@ services:
     restart: unless-stopped
 
   db:
-    image: mysql:8
+    image: postgres:17
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: RecipeApp
-      MYSQL_USER: recipeapp
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: RecipeApp
+      POSTGRES_USER: recipeapp
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     # Port exposé sur l'hôte pour un accès direct depuis un client SQL local (DBeaver, etc.)
     # Remettre en commentaire si vous n'en avez plus besoin.
     #ports:
-    #  - "127.0.0.1:3306:3306"
+    #  - "127.0.0.1:5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "recipeapp", "-p${DB_PASSWORD}"]
+      test: ["CMD-SHELL", "pg_isready -U recipeapp -d RecipeApp"]
       interval: 10s
       timeout: 5s
       retries: 10
     restart: unless-stopped
 
-  phpmyadmin:
-    image: phpmyadmin:latest
+  adminer:
+    image: adminer:latest
     profiles: ["dev"]          # Ne démarre PAS avec docker-compose up (seulement avec --profile dev)
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:8081:8080"
     environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      ADMINER_DEFAULT_SERVER: db
     depends_on:
       - db
     restart: unless-stopped
 
 volumes:
-  mysql_data:
+  postgres_data:
   app_uploads:
   app_dataprotection:

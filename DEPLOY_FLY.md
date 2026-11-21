@@ -1,6 +1,6 @@
 # Déploiement sur Fly.io
 
-Migration depuis AWS App Runner — la base de données MySQL reste sur **Aiven** (aucune migration de données), et les photos restent sur **AWS S3** (`recettesbucket`, aucune migration non plus). Seul le conteneur applicatif change d'hébergeur.
+Migration depuis AWS App Runner — la base de données PostgreSQL est sur **Aiven** (aucune migration de données), et les photos restent sur **AWS S3** (`recettesbucket`, aucune migration non plus). Seul le conteneur applicatif change d'hébergeur.
 
 ## Prérequis (déjà faits une fois)
 
@@ -31,7 +31,7 @@ Reconstruit l'image Docker (`RecipeApp.Web/Dockerfile`) et remplace la version e
 
 | Variable | Contenu |
 |---|---|
-| `ConnectionStrings__DefaultConnection` | Connexion MySQL Aiven (host, port, `defaultdb`, `avnadmin`, SSL requis) |
+| `ConnectionStrings__DefaultConnection` | Connexion PostgreSQL Aiven — l'URI `postgres://avnadmin:...@hote:port/defaultdb?sslmode=require` copiée de la console Aiven est acceptée telle quelle |
 | `Gemini__ApiKey`, `Gemini__Model`, `Gemini__VideoModel` | Accès API Gemini |
 | `AWS__BucketName`, `AWS__Region` | Bucket S3 `recettesbucket`, région `us-east-2` |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Identifiants IAM pour S3 (pas de rôle IAM type EC2 sur Fly — obligatoire ici) |
@@ -74,3 +74,22 @@ Une fois le déploiement Fly.io validé (connexion, création de recette, upload
 1. Rediriger le trafic réel vers l'URL Fly.io (`recetteapp.fly.dev`, ou un domaine personnalisé si tu en ajoutes un plus tard)
 2. Arrêter le service AWS App Runner pour cesser la facturation
 3. Les identifiants AWS (S3) et la base Aiven restent utilisés tels quels — rien à changer de ce côté
+
+## Migration MySQL → PostgreSQL (Aiven, novembre 2026)
+
+Aiven ne supporte plus MySQL gratuitement : l'application utilise maintenant PostgreSQL (fournisseur EF Core Npgsql).
+
+1. Créer le service **PostgreSQL** gratuit sur Aiven et copier son **Service URI** (`postgres://avnadmin:...@hote:port/defaultdb?sslmode=require`).
+2. Copier les données existantes (depuis la racine du repo, avant de basculer l'app) :
+   ```bash
+   dotnet run --project outils/MigrationMySqlVersPostgres -- "<chaîne MySQL actuelle>" "<Service URI PostgreSQL>"
+   ```
+   L'outil crée le schéma, copie utilisateurs, recettes, ingrédients, étapes, catégories, étiquettes et partages dans une seule transaction, puis affiche le nombre de lignes par table. La chaîne MySQL actuelle se trouve dans les secrets Fly (ou la console Aiven).
+3. Basculer l'app :
+   ```bash
+   flyctl secrets set --app recetteapp "ConnectionStrings__DefaultConnection=<Service URI PostgreSQL>"
+   flyctl deploy --app recetteapp
+   ```
+4. Vérifier que la connexion et les recettes fonctionnent, puis supprimer le service MySQL sur Aiven.
+
+Base vide (sans données à conserver) : sauter l'étape 2, le schéma est créé automatiquement au démarrage.
