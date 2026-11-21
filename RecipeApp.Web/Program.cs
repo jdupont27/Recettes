@@ -30,7 +30,7 @@ try
 
 		// On limite les réseaux autorisés (ici on autorise tout car App Runner gère la sécurité en amont)
 		// Mais on utilise une syntaxe qui évite le message "Obsolete" ou "Warning"
-		options.KnownNetworks.Clear();
+		options.KnownIPNetworks.Clear();
 		options.KnownProxies.Clear();
 	});
 

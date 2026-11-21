@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- Utilisé uniquement pour lire l'ancienne base MySQL -->
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <!-- Force une version corrigée (GHSA-473q-m89c-ghf8) au lieu de la 2.4.0 tirée par Pomelo -->
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
   </ItemGroup>
 
   <PropertyGroup>
