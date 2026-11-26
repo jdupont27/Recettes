@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using RecipeApp.Application;
 using RecipeApp.Infrastructure;
 using RecipeApp.Infrastructure.Persistence;
@@ -28,8 +30,7 @@ try
 	{
 		options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
-		// On limite les réseaux autorisés (ici on autorise tout car App Runner gère la sécurité en amont)
-		// Mais on utilise une syntaxe qui évite le message "Obsolete" ou "Warning"
+		// Autorise les en-têtes X-Forwarded-* du mandataire (Fly.io) en amont.
 		options.KnownIPNetworks.Clear();
 		options.KnownProxies.Clear();
 	});
@@ -95,6 +96,10 @@ try
         options.SlidingExpiration = true;
     });
 
+    // Santé de l'application et de la base (sans paquet supplémentaire)
+    builder.Services.AddHealthChecks()
+        .AddCheck<VerificateurSanteBaseDeDonnees>("base-de-donnees");
+
     var app = builder.Build();
 	app.UseForwardedHeaders();
 
@@ -124,6 +129,9 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // Endpoint de santé : accessible sans authentification (sondes et vérification locale)
+    app.MapHealthChecks("/health").AllowAnonymous();
+
     // Endpoints API REST
     app.MapControllers();
 
@@ -150,4 +158,32 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+internal sealed class VerificateurSanteBaseDeDonnees : IHealthCheck
+{
+    private readonly IDbContextFactory<AppDbContext> _fabrique;
+
+    public VerificateurSanteBaseDeDonnees(IDbContextFactory<AppDbContext> fabrique)
+    {
+        _fabrique = fabrique;
+    }
+
+    public async Task<HealthCheckResult> CheckHealthAsync(
+        HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using var db = await _fabrique.CreateDbContextAsync(cancellationToken);
+            var accessible = await db.Database.CanConnectAsync(cancellationToken);
+            return accessible
+                ? HealthCheckResult.Healthy("La base de données est accessible.")
+                : HealthCheckResult.Unhealthy("La base de données est inaccessible.");
+        }
+        catch (Exception ex)
+        {
+            return HealthCheckResult.Unhealthy("La base de données est inaccessible.", ex);
+        }
+    }
 }
